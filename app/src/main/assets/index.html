@@ -2,10 +2,10 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* layout: painel de meta no topo, fichas por fundo em grade (como a folha do vídeo), tabela comparativa no fim */
-:root{--bg:#eef3f7;--card:#fff;--tx:#14202b;--mu:#5a6b7a;--ac:#1f5f99;--ice:#5fa8d3;--bd:#d6e0e8;--ok:#1c7c54;--warn:#b5651d;color-scheme:light;
+:root{--bg:#eef3f7;--card:#fff;--tx:#14202b;--mu:#5a6b7a;--ac:#1f5f99;--ice:#5fa8d3;--bd:#d6e0e8;--ok:#1c7c54;--warn:#b5651d;--gold:#9a6a0c;--vio:#6b4fbb;color-scheme:light;
 --f-hand:"Patrick Hand","Comic Sans MS",cursive;--f-body:system-ui,-apple-system,"Segoe UI",sans-serif}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;color-scheme:dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;--gold:#e0b35a;--vio:#a891f0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;--gold:#e0b35a;--vio:#a891f0;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--tx);font-family:var(--f-body)}
 .wrap{max-width:1240px;margin:auto;padding-block:18px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
@@ -73,8 +73,11 @@ canvas{width:100%;height:280px;display:block}
 .pre{position:relative}.pre i{position:absolute;left:9px;top:50%;transform:translateY(-35%);font-style:normal;font-size:.8rem;color:var(--mu);pointer-events:none}.pre input{padding-left:30px!important}
 .magico{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 8px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ac) 9%,var(--card))}
 .magico span{font-size:.82rem;color:var(--mu)}.magico b{font-family:var(--f-hand);font-size:1.6rem;color:var(--ac);text-align:right}.magico small{grid-column:1/-1;text-align:right;font-size:.8rem;color:var(--mu);font-variant-numeric:tabular-nums}
-.row span,.row b{white-space:nowrap}
+.row span{white-space:normal}.row b{white-space:nowrap}.ficha,.ficha .ed>div{min-width:0}
 .tbox{display:grid;gap:5px}.tbox .lbl{font-size:.76rem;color:var(--mu)}
+.ficha.acao{border:2px solid var(--gold)}.gtit.acao{border-color:var(--gold)}.ciclo.acao{color:var(--gold)}
+.ficha.outro{border:2px solid var(--vio)}.gtit.outro{border-color:var(--vio)}.ciclo.outro{color:var(--vio)}
+.na{font-size:.82rem;color:var(--mu);padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--vio) 9%,var(--card))}
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.84rem}
 th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -93,7 +96,7 @@ th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74re
   <div><label for="renda">Renda mensal desejada (R$)</label><input id="renda" type="number" value="1000"></div>
   <div><label for="aporte">Seu aporte mensal (R$)</label><input id="aporte" type="number" value="300"></div>
   <div><label for="a1">Aportes da tabela de tempo (R$)</label><input id="a1" type="text" value="50, 100, 200, 300"></div>
-  <div><label for="selic">Selic atual (% a.a.)</label><input id="selic" type="number" step="0.25" value="14.25"></div>
+  <div><label for="selic">Selic atual (% a.a.)</label><input id="selic" type="number" step="0.25" value="13.75"></div>
   <div><label for="reinv">Reinvestir dividendos? (1 = sim, 0 = não)</label><input id="reinv" type="number" min="0" max="1" value="1"></div>
  </div></div>
 
@@ -162,8 +165,9 @@ th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74re
  <p class="note" id="cmpTxt"></p></div>
 
  <p class="note"><b>Como ler.</b> Nº mágico = cotação ÷ dividendo, arredondado para cima: com essa quantidade, o dividendo do mês compra 1 cota sozinho. O tempo considera o aporte mensal mais os dividendos reinvestidos, comprando só cotas inteiras, com cotação e dividendo constantes.
- <br><b>Dados.</b> Dividendos pagos em outubro de 2026 (MXRF11, HGLG11 em 15/10; KNCR11 em 14/10; VGIR11 em 20/10; CPTS11 em 22/10; XPML11 e BTLG11 em 23/10). Cotações calculadas a partir do dividend yield divulgado, exceto KNCR11 (cotação informada). <span class="warn">GARE11 usa o último dado que encontrei, de fevereiro de 2026.</span> Edite cotação e dividendo em cada ficha com o valor do dia na sua corretora.
+ <br><b>Dados.</b> Dividendos pagos em outubro de 2026 (GGRC11 em 8/10; MXRF11, HGLG11 em 15/10; KNCR11 em 14/10; VGIR11 em 20/10; CPTS11 em 22/10; XPML11 e BTLG11 em 23/10). Cotações calculadas a partir do dividend yield divulgado, exceto KNCR11 (cotação informada). <span class="warn">GARE11 usa o último dado que encontrei, de fevereiro de 2026.</span> Edite cotação e dividendo em cada ficha com o valor do dia na sua corretora.
  <br><b>Cotas que tenho.</b> Você pode digitar direto na ficha ou usar "Minhas compras", que soma as cotas e guarda o histórico.
+ <br><b>Ações, CDB e ETF.</b> ITUB4 a R$ 48,30 (fechamento de 23/10/2026), com dividendo médio estimado; JCP tem 15% de IR na fonte. CDB Nubank: 100% do CDI, com CDI estimado em 13,65% (Selic de 13,75% desde 16/09/2026) e IR de 15% (aplicações acima de 2 anos; abaixo disso o IR é maior). IVVB11 a R$ 430,00; a valorização de 10% ao ano é uma premissa, não uma garantia (o ETF rendeu 5,44% nos últimos 12 meses). Lucro na venda de ETF paga 15% de IR.
  <br>Dividendos de FII são isentos de IR para pessoa física nas regras atuais; lucro na venda das cotas paga 20%. Dividendo muda todo mês. Seus valores ficam salvos neste navegador. Simulação educativa, não é recomendação de investimento.</p>
 </div>
 
@@ -173,19 +177,21 @@ const FUNDOS=[
  {t:'KNCR11',dia:14,c:'papel',s:'Papel (CRI)',p:105.88,d:1.13},
  {t:'VGIR11',dia:20,c:'papel',s:'Papel (CRI)',p:9.77,d:0.13},
  {t:'CPTS11',dia:22,c:'papel',s:'Papel (CRI)',p:7.96,d:0.09,sug:1},
+ {t:'GGRC11',dia:8,c:'tijolo',s:'Logística',p:8.99,d:0.10},
  {t:'XPML11',dia:23,c:'tijolo',s:'Shopping',p:105.75,d:0.92},
  {t:'GARE11',dia:6,c:'tijolo',s:'Renda urbana',p:8.74,d:0.083,old:1},
  {t:'BTLG11',dia:23,c:'tijolo',s:'Logística',p:103.85,d:0.81,sug:1},
- {t:'HGLG11',dia:15,c:'tijolo',s:'Logística',p:148.10,d:1.17,sug:1}];
+ {t:'HGLG11',dia:15,c:'tijolo',s:'Logística',p:148.10,d:1.17,sug:1},
+{t:'ITUB4',dia:1,c:'acao',s:'Banco',p:48.30,d:0.28,acao:1}];
 let compras=[];
 const tenho={},peso={};FUNDOS.forEach(f=>{tenho[f.t]=0;peso[f.t]=0});
 const PRESETS={eq:{MXRF11:15,KNCR11:15,VGIR11:10,CPTS11:10,XPML11:15,BTLG11:15,HGLG11:10,GARE11:10},
  renda:{MXRF11:20,KNCR11:20,VGIR11:15,CPTS11:15,XPML11:10,BTLG11:10,GARE11:10},
  tij:{MXRF11:10,KNCR11:10,VGIR11:5,CPTS11:5,XPML11:20,BTLG11:20,HGLG11:20,GARE11:10},zero:{}};
 const KEY='bolaneve-v1';
-function dados(){return{v:1,salvoEm:new Date().toISOString(),tenho,peso,f:Object.fromEntries(FUNDOS.map(f=>[f.t,[f.p,f.d]])),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
+function dados(){return{v:1,o2:OUT,salvoEm:new Date().toISOString(),tenho,peso,f:Object.fromEntries(FUNDOS.map(f=>[f.t,[f.p,f.d]])),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
 function salvar(){try{localStorage.setItem(KEY,JSON.stringify(dados()))}catch(e){}}
-function carregar(){try{return aplicar(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){return false}}
+function carregar(){try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');if(raw&&raw.o2)Object.assign(OUT,raw.o2);return aplicar(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){return false}}
 function aplicar(o){if(!o||!o.tenho||!o.f)return false;Object.assign(tenho,o.tenho);Object.assign(peso,o.peso||{});
  const ANT=['MXRF11','XPML11','GARE11','VGIR11','KNCR11','BTLG11','HGLG11','CPTS11'],fo=Array.isArray(o.f)?Object.fromEntries(o.f.map((v,i)=>[ANT[i],v])):o.f;
  FUNDOS.forEach(f=>{const v=fo[f.t];if(v){f.p=v[0];f.d=v[1]}});compras=o.compras||[];['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].forEach((id,i)=>{if(o.g&&o.g[i]!=null)$(id).value=o.g[i]});return true}
@@ -208,7 +214,7 @@ function montar(){
    <div><label for="q${i}">Cotas que tenho</label><input id="q${i}" type="number" min="0" value="${tenho[f.t]}"></div>
    <div><label for="w${i}">% na carteira</label><input id="w${i}" type="number" min="0" max="100" value="${peso[f.t]}"></div>
   </div>
-  ${f.old?'<div class="note warn">Dividendo de fev/2026, confira o atual.</div>':''}
+  ${f.old?'<div class="note warn">Dividendo de fev/2026, confira o atual.</div>':''}${f.acao?'<div class="note">Média mensal estimada (dividend yield de ~7% ao ano). O Itaú paga R$ 0,015 líquido de JCP todo mês e o resto em dividendos extras ao longo do ano.</div>':''}
   <div class="magico"><span>Nº mágico</span><b id="m${i}"></b><small id="v${i}"></small></div>
   <div class="row"><span>Rende por mês</span><b id="y${i}"></b></div>
   <div class="row"><span>Falta</span><b id="f${i}"></b></div>
@@ -216,13 +222,13 @@ function montar(){
   <div class="meta" id="r${i}"></div>
  </article>`;
  const grupo=(c,tit,sub)=>`<section class="grupo"><h2 class="gtit ${c}">${tit}<small>${sub}</small></h2><div class="fichas">${FUNDOS.map((f,i)=>f.c===c?card(f,i):'').join('')}</div></section>`;
- $('fichas').innerHTML=grupo('papel','Fundos de papel (CRI)','Pagam mais com juros altos. Dividendo acompanha a Selic.')+grupo('tijolo','Fundos de tijolo','Imóveis físicos: aluguel sobe com a inflação e a cota valoriza quando os juros caem.');
+ $('fichas').innerHTML=grupo('papel','Fundos de papel (CRI)','Pagam mais com juros altos. Dividendo acompanha a Selic.')+grupo('tijolo','Fundos de tijolo','Imóveis físicos: aluguel sobe com a inflação e a cota valoriza quando os juros caem.')+grupo('acao','Ações','Pagam dividendos e JCP. O valor varia mais que o dos FIIs.')+outrosHTML();
  FUNDOS.forEach((f,i)=>{$('p'+i).oninput=e=>{f.p=lerN(e.target.value);calc()};$('d'+i).oninput=e=>{f.d=lerN(e.target.value);calc()};
   $('p'+i).onblur=e=>e.target.value=fmtN(f.p,2);$('d'+i).onblur=e=>e.target.value=fmtN(f.d,Math.round(f.d*1000)%10?3:2);
   $('q'+i).oninput=e=>{tenho[f.t]=Math.max(0,Math.floor(+e.target.value||0));calc()};$('w'+i).oninput=e=>{peso[f.t]=Math.max(0,+e.target.value||0);calc()}})}
 function preset(p){FUNDOS.forEach((f,i)=>{peso[f.t]=PRESETS[p][f.t]||0;$('w'+i).value=peso[f.t]});calc()}
 document.querySelectorAll('.presets button').forEach(b=>b.onclick=()=>preset(b.dataset.p));
-function cores(f){return f.c==='papel'?'var(--ok)':'var(--ice)'}
+function cores(f){return f.c==='papel'?'var(--ok)':f.c==='acao'?'var(--gold)':'var(--ice)'}
 function carteira(renda,ap,re){
  const tw=FUNDOS.reduce((a,f)=>a+peso[f.t],0),ok=FUNDOS.filter(f=>peso[f.t]>0&&f.p>0&&f.d>0);
  const hoje=FUNDOS.reduce((a,f)=>a+tenho[f.t]*f.d,0);$('kHoje').textContent=brl(hoje);
@@ -290,6 +296,39 @@ function cenario(renda,ap,re){
  x.textAlign='center';for(let y=0;y<=anos;y+=5)x.fillText(y+' anos',X(Math.min(y*12,m-1)),H-6);
  x.strokeStyle=col('--warn');x.setLineDash([5,4]);x.beginPath();x.moveTo(pl,Y(renda));x.lineTo(W-pr,Y(renda));x.stroke();x.setLineDash([]);
  [[a,'--ac'],[b,'--ok']].forEach(([s,v])=>{x.strokeStyle=col(v);x.lineWidth=2.2;x.beginPath();for(let i=0;i<m;i++){i?x.lineTo(X(i),Y(s[i])):x.moveTo(X(i),Y(s[i]))}x.stroke()})}
+const OUT={cdbPct:100,cdi:13.65,cdbTem:0,ivP:430,ivR:10,ivQ:0};
+function outrosHTML(){return `<section class="grupo"><h2 class="gtit outro">Outros investimentos<small>Não pagam dividendo mensal: o rendimento fica acumulado no próprio investimento.</small></h2><div class="fichas">
+ <article class="ficha outro"><header><h3>CDB Nubank</h3><span class="tag">Renda fixa · Caixinha</span></header>
+  <div class="ed"><div><label for="oPct">% do CDI</label><input id="oPct" type="number" value="${OUT.cdbPct}"></div>
+  <div><label for="oCdi">CDI (% a.a.)</label><input id="oCdi" type="number" step="0.01" value="${OUT.cdi}"></div>
+  <div style="grid-column:1/-1"><label for="oTem">Valor que tenho (R$)</label><input id="oTem" type="number" value="${OUT.cdbTem}"></div></div>
+  <div class="na">Sem nº mágico: rende todo dia útil e os juros já ficam reinvestidos. Saque quando quiser. Garantido pelo FGC até R$ 250 mil.</div>
+  <div class="row"><span>Rende por mês (líquido)</span><b id="oY"></b></div>
+  <div class="row"><span>Seu rendimento hoje</span><b id="oHoje"></b></div>
+  <div class="meta" id="oMeta"></div></article>
+ <article class="ficha outro"><header><h3>IVVB11</h3><span class="tag">ETF · S&P 500 (EUA)</span></header>
+  <div class="ed"><div><label for="iP">Cota</label><div class="pre"><i>R$</i><input id="iP" type="text" inputmode="decimal" value="${fmtN(OUT.ivP,2)}"></div></div>
+  <div><label for="iR">Valorização (% a.a.)</label><input id="iR" type="number" step="0.5" value="${OUT.ivR}"></div>
+  <div style="grid-column:1/-1"><label for="iQ">Cotas que tenho</label><input id="iQ" type="number" min="0" value="${OUT.ivQ}"></div></div>
+  <div class="na">Sem nº mágico: não paga dividendos, eles são reinvestidos dentro do ETF. Ganho vem da alta das 500 maiores empresas dos EUA e do dólar.</div>
+  <div class="row"><span>Valor que tenho</span><b id="iHoje"></b></div>
+  <div class="row"><span>Com seu aporte, em 10 anos</span><b id="i10"></b></div>
+  <div class="meta" id="iMeta"></div></article>
+ </div></section>`}
+function ligarOutros(){const n=(id,k,f)=>$(id).oninput=e=>{OUT[k]=f?lerN(e.target.value):(+e.target.value||0);calc()};
+ n('oPct','cdbPct');n('oCdi','cdi');n('oTem','cdbTem');n('iP','ivP',1);n('iR','ivR');n('iQ','ivQ');$('iP').onblur=e=>e.target.value=fmtN(OUT.ivP,2)}
+function calcOutros(renda,ap){const lin=[];
+ const rc=(Math.pow(1+OUT.cdi*OUT.cdbPct/10000,1/12)-1)*0.85;
+ $('oY').textContent=fmtN(rc*100,2)+'%';$('oHoje').textContent=brl(OUT.cdbTem*rc)+'/mês';
+ let v=OUT.cdbTem,m=0;const alvo=rc>0?renda/rc:Infinity;while(v<alvo&&m<=600){m++;v=v*(1+rc)+ap}
+ const tc=m>600?null:m;
+ $('oMeta').innerHTML=renda>0&&rc>0?`<div>Para ${brl(renda)}/mês: <b>${brl(alvo)}</b> guardados</div><div>Faltam <b>${brl(Math.max(0,alvo-OUT.cdbTem))}</b></div><div>Com ${brl(ap)}/mês: <b>${tempoTxt(tc)}</b></div>`:'Defina a renda desejada.';
+ lin.push({t:'CDB Nubank',c:'outro',s:'Renda fixa',dy:rc,inv:alvo,tm:tc});
+ const g=Math.pow(1+OUT.ivR/100,1/12)-1,hoje=OUT.ivQ*OUT.ivP;$('iHoje').textContent=brl(hoje);
+ let w=hoje;for(let k=0;k<120;k++)w=w*(1+g)+ap;$('i10').textContent=brl(w);
+ const alvoI=renda*12/0.04;let x=hoje,mm=0;while(x<alvoI&&mm<=600){mm++;x=x*(1+g)+ap}const ti=mm>600?null:mm;
+ $('iMeta').innerHTML=renda>0?`<div>Para tirar ${brl(renda)}/mês vendendo 4% ao ano: <b>${brl(alvoI)}</b></div><div>São <b>${num(Math.ceil(alvoI/OUT.ivP))} cotas</b>; faltam ${brl(Math.max(0,alvoI-hoje))}</div><div>Com ${brl(ap)}/mês: <b>${tempoTxt(ti)}</b></div>`:'Defina a renda desejada.';
+ lin.push({t:'IVVB11',c:'outro',s:'ETF EUA',dy:null,inv:alvoI,tm:ti});return lin}
 function calc(){
  const renda=+$('renda').value||0,ap=+$('aporte').value||0,re=$('reinv').value!=='0',aps=aportes();const linhas=[];
  const selic=+$('selic').value||0,alto=selic>=10,cen=$('cenario');cen.className='cenario'+(alto?'':' baixo');
@@ -307,15 +346,16 @@ function calc(){
    <div>Faltam <b>${num(fm)} cotas</b> = ${brl(fm*f.p)}</div>
    <div>Com ${brl(ap)}/mês: <b>${tempoTxt(tm)}</b></div><div class="prog"><i style="width:${pct}%"></i></div>`:'Defina a renda desejada.';
   linhas.push({f,qm,inv:qm*f.p,tm,mag})});
+ const outros=calcOutros(renda,ap);
  const minInv=Math.min(...linhas.map(l=>l.inv)),minT=Math.min(...linhas.map(l=>l.tm??1e9));
  $('cmp').innerHTML='<tr><th>Fundo</th><th>Segmento</th><th>DY mês</th><th>Nº mágico</th><th>Cotas p/ meta</th><th>Valor p/ meta</th><th>Tempo com seu aporte</th></tr>'+
-  linhas.map(l=>`<tr><td>${l.f.t}</td><td><span class="ciclo ${l.f.c}">${l.f.s}</span></td><td>${(l.f.d/l.f.p*100).toFixed(2).replace('.',',')}%</td><td>${num(l.mag)}</td><td>${num(l.qm)}</td><td class="${l.inv===minInv?'best':''}">${brl(l.inv)}</td><td class="${l.tm===minT?'best':''}">${tempoTxt(l.tm)}</td></tr>`).join('');
+  linhas.map(l=>`<tr><td>${l.f.t}</td><td><span class="ciclo ${l.f.c}">${l.f.s}</span></td><td>${(l.f.d/l.f.p*100).toFixed(2).replace('.',',')}%</td><td>${num(l.mag)}</td><td>${num(l.qm)}</td><td class="${l.inv===minInv?'best':''}">${brl(l.inv)}</td><td class="${l.tm===minT?'best':''}">${tempoTxt(l.tm)}</td></tr>`).join('')+outros.map(o=>`<tr><td>${o.t}</td><td><span class="ciclo outro">${o.s}</span></td><td>${o.dy==null?'–':fmtN(o.dy*100,2)+'%'}</td><td>–</td><td>–</td><td>${brl(o.inv)}</td><td>${tempoTxt(o.tm)}</td></tr>`).join('');
  carteira(renda,ap,re);historico();calendario();cenario(renda,ap,re);salvar();
  $('cmpTxt').textContent=renda>0?`Para ${brl(renda)} por mês investindo num único fundo. Em verde, o menor valor necessário e o menor tempo. Dividir entre vários fundos e segmentos reduz o risco de um deles cortar o dividendo.`:'';
 }
 ['renda','aporte','a1','reinv','selic','sAlvo','sAnos','ipca','valT'].forEach(id=>$(id).addEventListener('input',calc));
 if(!carregar())FUNDOS.forEach(f=>peso[f.t]=PRESETS.eq[f.t]||0);
-montar();initCompra();calc();
+montar();ligarOutros();initCompra();calc();
 function msg(t,ok){const m=$('bkMsg');m.textContent=t;m.style.color=ok?'var(--ok)':'#d0453a'}
 $('bkCopiar').onclick=()=>{const t=JSON.stringify(dados());$('bkTxt').value=t;
  const sel=()=>{$('bkTxt').focus();$('bkTxt').select();msg('Backup gerado. O texto está selecionado: copie com Ctrl+C (ou segure e copie no celular).',true)};
@@ -323,6 +363,6 @@ $('bkCopiar').onclick=()=>{const t=JSON.stringify(dados());$('bkTxt').value=t;
 $('bkRest').onclick=()=>{let o;try{o=JSON.parse($('bkTxt').value.trim())}catch(e){msg('Esse texto não é um backup válido. Cole o texto completo, começando com { e terminando com }.',false);return}
  compras=[];FUNDOS.forEach(f=>{tenho[f.t]=0;peso[f.t]=0});
  if(!aplicar(o)){msg('Esse texto não é um backup deste simulador.',false);return}
- montar();calc();const d=o.salvoEm?new Date(o.salvoEm).toLocaleString('pt-BR'):'';msg(`Backup restaurado${d?' (salvo em '+d+')':''}.`,true)};addEventListener('resize',()=>cenario(+$('renda').value||0,+$('aporte').value||0,$('reinv').value!=='0'));
+ if(o.o2)Object.assign(OUT,o.o2);montar();ligarOutros();calc();const d=o.salvoEm?new Date(o.salvoEm).toLocaleString('pt-BR'):'';msg(`Backup restaurado${d?' (salvo em '+d+')':''}.`,true)};addEventListener('resize',()=>cenario(+$('renda').value||0,+$('aporte').value||0,$('reinv').value!=='0'));
 </script>
 </body></html>
