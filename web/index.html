@@ -31,7 +31,7 @@ input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
 .ficha .ed input{padding:6px;font-size:.85rem}
 .ficha .ed label{font-size:.68rem}
 .big{font-family:var(--f-hand);font-size:1.25rem;color:var(--ac)}
-.tempo{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:.84rem;font-variant-numeric:tabular-nums}
+.tempo{display:grid;grid-template-columns:1fr;gap:3px;font-size:.84rem;font-variant-numeric:tabular-nums}
 .tempo div{display:flex;justify-content:space-between;gap:6px}.tempo span{color:var(--mu)}
 .meta{background:color-mix(in srgb,var(--ac) 10%,var(--card));border-radius:8px;padding:8px 10px;font-size:.84rem;display:grid;gap:3px}
 .meta b{font-variant-numeric:tabular-nums}
@@ -67,6 +67,14 @@ canvas{width:100%;height:280px;display:block}
 .leg2{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--mu);margin-top:6px}.leg2 i{display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle}
 .bk{display:grid;gap:10px}.bk textarea{width:100%;min-height:90px;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:12px ui-monospace,Consolas,monospace;resize:vertical}
 .bk .acoes{display:flex;gap:8px;flex-wrap:wrap}.btn.sec{background:var(--ac)}#bkMsg{font-size:.84rem}
+.grupo{display:grid;gap:10px}.gtit{display:flex;flex-direction:column;gap:2px;font-size:1.1rem;margin:6px 0 0;padding-left:10px;border-left:4px solid}
+.gtit.papel{border-color:var(--ok)}.gtit.tijolo{border-color:var(--ice)}.gtit small{font-size:.8rem;font-weight:400;color:var(--mu)}
+#fichas{display:grid;gap:18px}
+.pre{position:relative}.pre i{position:absolute;left:9px;top:50%;transform:translateY(-35%);font-style:normal;font-size:.8rem;color:var(--mu);pointer-events:none}.pre input{padding-left:30px!important}
+.magico{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 8px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ac) 9%,var(--card))}
+.magico span{font-size:.82rem;color:var(--mu)}.magico b{font-family:var(--f-hand);font-size:1.6rem;color:var(--ac);text-align:right}.magico small{grid-column:1/-1;text-align:right;font-size:.8rem;color:var(--mu);font-variant-numeric:tabular-nums}
+.row span,.row b{white-space:nowrap}
+.tbox{display:grid;gap:5px}.tbox .lbl{font-size:.76rem;color:var(--mu)}
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.84rem}
 th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -92,7 +100,7 @@ th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74re
  <div class="cenario" id="cenario"></div>
  <div class="legenda"><span class="ciclo papel">Papel (CRI): paga mais com juros altos</span><span class="ciclo tijolo">Tijolo: valoriza quando os juros caem</span></div>
 
- <div class="fichas" id="fichas"></div>
+ <div id="fichas"></div>
 
  <div class="card"><h2>Minha carteira dividida</h2>
   <div class="presets"><button data-p="eq">Equilibrada 50/50</button><button data-p="renda">Mais renda (70% papel)</button><button data-p="tij">Mais tijolo (70% tijolo)</button><button data-p="zero">Zerar</button></div>
@@ -162,49 +170,56 @@ th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74re
 <script>
 const FUNDOS=[
  {t:'MXRF11',dia:15,c:'papel',s:'Papel (CRI)',p:9.17,d:0.10},
+ {t:'KNCR11',dia:14,c:'papel',s:'Papel (CRI)',p:105.88,d:1.13},
+ {t:'VGIR11',dia:20,c:'papel',s:'Papel (CRI)',p:9.77,d:0.13},
+ {t:'CPTS11',dia:22,c:'papel',s:'Papel (CRI)',p:7.96,d:0.09,sug:1},
  {t:'XPML11',dia:23,c:'tijolo',s:'Shopping',p:105.75,d:0.92},
  {t:'GARE11',dia:6,c:'tijolo',s:'Renda urbana',p:8.74,d:0.083,old:1},
- {t:'VGIR11',dia:20,c:'papel',s:'Papel (CRI)',p:9.77,d:0.13},
- {t:'KNCR11',dia:14,c:'papel',s:'Papel (CRI)',p:105.88,d:1.13},
  {t:'BTLG11',dia:23,c:'tijolo',s:'Logística',p:103.85,d:0.81,sug:1},
- {t:'HGLG11',dia:15,c:'tijolo',s:'Logística',p:148.10,d:1.17,sug:1},
- {t:'CPTS11',dia:22,c:'papel',s:'Papel (CRI)',p:7.96,d:0.09,sug:1}];
+ {t:'HGLG11',dia:15,c:'tijolo',s:'Logística',p:148.10,d:1.17,sug:1}];
 let compras=[];
 const tenho={},peso={};FUNDOS.forEach(f=>{tenho[f.t]=0;peso[f.t]=0});
 const PRESETS={eq:{MXRF11:15,KNCR11:15,VGIR11:10,CPTS11:10,XPML11:15,BTLG11:15,HGLG11:10,GARE11:10},
  renda:{MXRF11:20,KNCR11:20,VGIR11:15,CPTS11:15,XPML11:10,BTLG11:10,GARE11:10},
  tij:{MXRF11:10,KNCR11:10,VGIR11:5,CPTS11:5,XPML11:20,BTLG11:20,HGLG11:20,GARE11:10},zero:{}};
 const KEY='bolaneve-v1';
-function dados(){return{v:1,salvoEm:new Date().toISOString(),tenho,peso,f:FUNDOS.map(f=>[f.p,f.d]),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
+function dados(){return{v:1,salvoEm:new Date().toISOString(),tenho,peso,f:Object.fromEntries(FUNDOS.map(f=>[f.t,[f.p,f.d]])),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
 function salvar(){try{localStorage.setItem(KEY,JSON.stringify(dados()))}catch(e){}}
 function carregar(){try{return aplicar(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){return false}}
 function aplicar(o){if(!o||!o.tenho||!o.f)return false;Object.assign(tenho,o.tenho);Object.assign(peso,o.peso||{});
- o.f.forEach((v,i)=>{if(FUNDOS[i]){FUNDOS[i].p=v[0];FUNDOS[i].d=v[1]}});compras=o.compras||[];['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].forEach((id,i)=>{if(o.g&&o.g[i]!=null)$(id).value=o.g[i]});return true}
+ const ANT=['MXRF11','XPML11','GARE11','VGIR11','KNCR11','BTLG11','HGLG11','CPTS11'],fo=Array.isArray(o.f)?Object.fromEntries(o.f.map((v,i)=>[ANT[i],v])):o.f;
+ FUNDOS.forEach(f=>{const v=fo[f.t];if(v){f.p=v[0];f.d=v[1]}});compras=o.compras||[];['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].forEach((id,i)=>{if(o.g&&o.g[i]!=null)$(id).value=o.g[i]});return true}
 const $=id=>document.getElementById(id);
 const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=v=>v.toLocaleString('pt-BR');
+const fmtN=(v,c)=>v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c});
+const lerN=t=>{t=String(t).trim();if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');return +t||0};
 function tempoTxt(m){if(m===null)return'+50 anos';if(m===0)return'já tem';const a=Math.floor(m/12),r=m%12;return(a?a+'a ':'')+(r?r+'m':'').trim()||'0m'}
 // meses até ter 'alvo' cotas, partindo de q0, aportando 'ap' por mês e reinvestindo dividendos
 function meses(f,alvo,ap,q0,reinv){let q=q0,c=0,m=0;if(q>=alvo)return 0;
  while(q<alvo){m++;if(m>600)return null;c+=ap+(reinv?q*f.d:0);const n=Math.floor(c/f.p);if(n>0){q+=n;c-=n*f.p}}return m}
 function aportes(){return $('a1').value.split(/[,; ]+/).map(Number).filter(v=>v>0).slice(0,6)}
 function montar(){
- $('fichas').innerHTML=FUNDOS.map((f,i)=>`<article class="ficha ${f.c}" id="card${i}">
+ const card=(f,i)=>`<article class="ficha ${f.c}" id="card${i}">
   <header><h3>${f.t}</h3><span class="tag ${f.sug?'sug':''}">${f.sug?'sugestão · ':''}${f.s}</span></header>
-  <div class="ciclo ${f.c}">${f.c==='papel'?'Rende mais com juros altos':'Valoriza quando os juros caem'}</div>
-  <div class="ed"><div><label for="p${i}">Cota (R$)</label><input id="p${i}" type="number" step="0.01" value="${f.p.toFixed(2)}"></div>
-  <div><label for="d${i}">Dividendo (R$)</label><input id="d${i}" type="number" step="0.001" value="${f.d}"></div>
-  <div><label for="q${i}">Cotas que tenho</label><input id="q${i}" type="number" min="0" value="${tenho[f.t]}"></div>
-  <div><label for="w${i}">% na carteira</label><input id="w${i}" type="number" min="0" max="100" value="${peso[f.t]}"></div></div>
+  <div class="ed">
+   <div><label for="p${i}">Cota</label><div class="pre"><i>R$</i><input id="p${i}" type="text" inputmode="decimal" value="${fmtN(f.p,2)}"></div></div>
+   <div><label for="d${i}">Dividendo/mês</label><div class="pre"><i>R$</i><input id="d${i}" type="text" inputmode="decimal" value="${fmtN(f.d,f.d<0.1&&Math.round(f.d*1000)%10?3:2)}"></div></div>
+   <div><label for="q${i}">Cotas que tenho</label><input id="q${i}" type="number" min="0" value="${tenho[f.t]}"></div>
+   <div><label for="w${i}">% na carteira</label><input id="w${i}" type="number" min="0" max="100" value="${peso[f.t]}"></div>
+  </div>
   ${f.old?'<div class="note warn">Dividendo de fev/2026, confira o atual.</div>':''}
-  <div class="row"><span>Dividend yield</span><b id="y${i}"></b></div>
-  <div class="row"><span>Nº mágico (1 cota por mês grátis)</span><b class="big" id="m${i}"></b></div>
-  <div class="row"><span>Valor para o nº mágico</span><b id="v${i}"></b></div>
-  <div class="row"><span>Faltam para o nº mágico</span><b id="f${i}"></b></div>
-  <div><span class="note">Tempo até o nº mágico:</span><div class="tempo" id="t${i}"></div></div>
+  <div class="magico"><span>Nº mágico</span><b id="m${i}"></b><small id="v${i}"></small></div>
+  <div class="row"><span>Rende por mês</span><b id="y${i}"></b></div>
+  <div class="row"><span>Falta</span><b id="f${i}"></b></div>
+  <div class="tbox"><span class="lbl">Tempo até o nº mágico</span><div class="tempo" id="t${i}"></div></div>
   <div class="meta" id="r${i}"></div>
- </article>`).join('');
- FUNDOS.forEach((f,i)=>{$('p'+i).oninput=e=>{f.p=+e.target.value||0;calc()};$('d'+i).oninput=e=>{f.d=+e.target.value||0;calc()};$('q'+i).oninput=e=>{tenho[f.t]=Math.max(0,Math.floor(+e.target.value||0));calc()};$('w'+i).oninput=e=>{peso[f.t]=Math.max(0,+e.target.value||0);calc()}})}
+ </article>`;
+ const grupo=(c,tit,sub)=>`<section class="grupo"><h2 class="gtit ${c}">${tit}<small>${sub}</small></h2><div class="fichas">${FUNDOS.map((f,i)=>f.c===c?card(f,i):'').join('')}</div></section>`;
+ $('fichas').innerHTML=grupo('papel','Fundos de papel (CRI)','Pagam mais com juros altos. Dividendo acompanha a Selic.')+grupo('tijolo','Fundos de tijolo','Imóveis físicos: aluguel sobe com a inflação e a cota valoriza quando os juros caem.');
+ FUNDOS.forEach((f,i)=>{$('p'+i).oninput=e=>{f.p=lerN(e.target.value);calc()};$('d'+i).oninput=e=>{f.d=lerN(e.target.value);calc()};
+  $('p'+i).onblur=e=>e.target.value=fmtN(f.p,2);$('d'+i).onblur=e=>e.target.value=fmtN(f.d,Math.round(f.d*1000)%10?3:2);
+  $('q'+i).oninput=e=>{tenho[f.t]=Math.max(0,Math.floor(+e.target.value||0));calc()};$('w'+i).oninput=e=>{peso[f.t]=Math.max(0,+e.target.value||0);calc()}})}
 function preset(p){FUNDOS.forEach((f,i)=>{peso[f.t]=PRESETS[p][f.t]||0;$('w'+i).value=peso[f.t]});calc()}
 document.querySelectorAll('.presets button').forEach(b=>b.onclick=()=>preset(b.dataset.p));
 function cores(f){return f.c==='papel'?'var(--ok)':'var(--ice)'}
@@ -283,10 +298,10 @@ function calc(){
  FUNDOS.forEach((f,i)=>{
   if(!(f.p>0&&f.d>0)){['y','m','v','f'].forEach(k=>$(k+i).textContent='–');$('t'+i).innerHTML='';$('r'+i).innerHTML='Preencha cotação e dividendo.';return}
   const q=tenho[f.t],mag=Math.ceil(f.p/f.d),falt=Math.max(0,mag-q);
-  $('y'+i).textContent=(f.d/f.p*100).toFixed(2).replace('.',',')+'% ao mês';
-  $('m'+i).textContent=num(mag)+' cotas';$('v'+i).textContent=brl(mag*f.p);
-  $('f'+i).textContent=falt?num(falt)+' cotas · '+brl(falt*f.p):'Atingido ✓';
-  $('t'+i).innerHTML=aps.map(a=>`<div><span>${brl(a)}/mês</span><b>${tempoTxt(meses(f,mag,a,q,re))}</b></div>`).join('');
+  $('y'+i).textContent=fmtN(f.d/f.p*100,2)+'%';
+  $('m'+i).textContent=num(mag)+' cotas';$('v'+i).textContent='custam '+brl(mag*f.p);
+  $('f'+i).textContent=falt?num(falt)+' cotas ('+brl(falt*f.p)+')':'Atingido ✓';
+  $('t'+i).innerHTML=aps.map(a=>`<div><span>R$ ${num(a)}/mês</span><b>${tempoTxt(meses(f,mag,a,q,re))}</b></div>`).join('');
   const qm=Math.ceil(renda/f.d),fm=Math.max(0,qm-q),tm=meses(f,qm,ap,q,re),pct=Math.min(100,q/qm*100);
   $('r'+i).innerHTML=renda>0?`<div>Para ${brl(renda)}/mês: <b>${num(qm)} cotas</b> (${brl(qm*f.p)})</div>
    <div>Faltam <b>${num(fm)} cotas</b> = ${brl(fm*f.p)}</div>
