@@ -159,6 +159,15 @@ th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74re
   <div class="acoes"><button class="btn" type="button" id="bkCopiar">Copiar backup</button><button class="btn sec" type="button" id="bkRest">Restaurar backup</button></div>
   <label for="bkTxt">Texto do backup</label><textarea id="bkTxt" spellcheck="false" placeholder="Cole aqui o backup para restaurar"></textarea>
   <div id="bkMsg" role="status"></div>
+  <h2 style="margin-top:8px">Backup automático no GitHub</h2>
+  <p class="note" style="margin:0">Salva num Gist secreto da sua conta: só quem tiver o link vê. Funciona no site do GitHub Pages e no app Android (não funciona na prévia dentro do Claude). O token fica guardado só neste aparelho.</p>
+  <div class="form4" style="margin:0">
+   <div style="grid-column:span 2"><label for="ghTok">Token do GitHub (permissão só de Gist)</label><input id="ghTok" type="password" autocomplete="off" placeholder="github_pat_... ou ghp_..."></div>
+   <div style="grid-column:span 2"><label for="ghId">ID do backup (Gist)</label><input id="ghId" type="text" autocomplete="off" placeholder="Criado no primeiro envio. Use o mesmo nos outros aparelhos"></div>
+  </div>
+  <label class="chk" style="display:flex;gap:8px;align-items:center;font-size:.86rem"><input id="ghAuto" type="checkbox" style="width:auto;margin:0"> Salvar no GitHub automaticamente a cada alteração</label>
+  <div class="acoes"><button class="btn" type="button" id="ghSalvar">Salvar no GitHub</button><button class="btn sec" type="button" id="ghBuscar">Restaurar do GitHub</button></div>
+  <div id="ghMsg" role="status" style="font-size:.84rem"></div>
  </div>
 
  <div class="card"><h2>Comparativo para a sua meta</h2><div class="scroll"><table id="cmp"></table></div>
@@ -190,7 +199,9 @@ const PRESETS={eq:{MXRF11:15,KNCR11:15,VGIR11:10,CPTS11:10,XPML11:15,BTLG11:15,H
  tij:{MXRF11:10,KNCR11:10,VGIR11:5,CPTS11:5,XPML11:20,BTLG11:20,HGLG11:20,GARE11:10},zero:{}};
 const KEY='bolaneve-v1';
 function dados(){return{v:1,o2:OUT,salvoEm:new Date().toISOString(),tenho,peso,f:Object.fromEntries(FUNDOS.map(f=>[f.t,[f.p,f.d]])),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
-function salvar(){try{localStorage.setItem(KEY,JSON.stringify(dados()))}catch(e){}}
+let ghTimer=null,ghPronto=false;
+function salvar(){try{localStorage.setItem(KEY,JSON.stringify(dados()))}catch(e){}
+ if(ghPronto&&$('ghAuto').checked&&$('ghTok').value.trim()){clearTimeout(ghTimer);ghTimer=setTimeout(()=>ghSalvar(true),8000)}}
 function carregar(){try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');if(raw&&raw.o2)Object.assign(OUT,raw.o2);return aplicar(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){return false}}
 function aplicar(o){if(!o||!o.tenho||!o.f)return false;Object.assign(tenho,o.tenho);Object.assign(peso,o.peso||{});
  const ANT=['MXRF11','XPML11','GARE11','VGIR11','KNCR11','BTLG11','HGLG11','CPTS11'],fo=Array.isArray(o.f)?Object.fromEntries(o.f.map((v,i)=>[ANT[i],v])):o.f;
@@ -357,6 +368,30 @@ function calc(){
 if(!carregar())FUNDOS.forEach(f=>peso[f.t]=PRESETS.eq[f.t]||0);
 montar();ligarOutros();initCompra();calc();
 function msg(t,ok){const m=$('bkMsg');m.textContent=t;m.style.color=ok?'var(--ok)':'#d0453a'}
+const GHK='bolaneve-gh',ARQ='bola-de-neve-backup.json';
+function ghCfg(){try{localStorage.setItem(GHK,JSON.stringify({tok:$('ghTok').value.trim(),id:$('ghId').value.trim(),auto:$('ghAuto').checked}))}catch(e){}}
+try{const c=JSON.parse(localStorage.getItem(GHK)||'null');if(c){$('ghTok').value=c.tok||'';$('ghId').value=c.id||'';$('ghAuto').checked=!!c.auto}}catch(e){}
+['ghTok','ghId','ghAuto'].forEach(id=>$(id).addEventListener('change',ghCfg));
+function gmsg(t,ok){const m=$('ghMsg');m.textContent=t;m.style.color=ok?'var(--ok)':'#d0453a'}
+async function gh(metodo,url,corpo){const tok=$('ghTok').value.trim();if(!tok)throw new Error('Cole o seu token do GitHub primeiro.');
+ const r=await fetch('https://api.github.com'+url,{method:metodo,headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(corpo?{'Content-Type':'application/json'}:{})},body:corpo?JSON.stringify(corpo):undefined});
+ if(r.status===401)throw new Error('Token inválido ou expirado. Gere um novo no GitHub.');
+ if(r.status===403)throw new Error('O token não tem permissão de Gist. Gere um com a permissão "Gists" (leitura e escrita).');
+ if(r.status===404)throw new Error('Backup não encontrado. Confira o ID ou apague o campo para criar um novo.');
+ if(!r.ok)throw new Error('O GitHub respondeu com erro '+r.status+'. Tente de novo em alguns minutos.');return r.json()}
+async function ghSalvar(auto){try{const id=$('ghId').value.trim(),conteudo=JSON.stringify(dados(),null,1);
+ const corpo={description:'Backup do simulador Bola de Neve',files:{[ARQ]:{content:conteudo}}};
+ const res=id?await gh('PATCH','/gists/'+encodeURIComponent(id),corpo):await gh('POST','/gists',{...corpo,public:false});
+ if(!id){$('ghId').value=res.id;ghCfg()}
+ gmsg((auto?'Salvo automaticamente no GitHub':'Backup salvo no GitHub')+' às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+(id?'.':'. Anote o ID do backup para usar nos outros aparelhos.'),true)}
+ catch(e){gmsg(e.message==='Failed to fetch'?'Sem conexão com o GitHub. Verifique a internet (na prévia do Claude isso não funciona; use o site ou o app).':e.message,false)}}
+async function ghBuscar(){try{const id=$('ghId').value.trim();if(!id)throw new Error('Cole o ID do backup (aparece no aparelho onde você salvou).');
+ const g=await gh('GET','/gists/'+encodeURIComponent(id));const f=g.files&&g.files[ARQ];if(!f)throw new Error('Esse Gist não tem um backup do simulador.');
+ let txt=f.content;if(f.truncated){const r=await fetch(f.raw_url);txt=await r.text()}
+ $('bkTxt').value=txt;$('bkRest').click();gmsg('Backup do GitHub restaurado (salvo em '+new Date(g.updated_at).toLocaleString('pt-BR')+').',true)}
+ catch(e){gmsg(e.message==='Failed to fetch'?'Sem conexão com o GitHub. Verifique a internet (na prévia do Claude isso não funciona; use o site ou o app).':e.message,false)}}
+$('ghSalvar').onclick=()=>{ghCfg();ghSalvar(false)};$('ghBuscar').onclick=()=>{ghCfg();ghBuscar()};
+ghPronto=true;
 $('bkCopiar').onclick=()=>{const t=JSON.stringify(dados());$('bkTxt').value=t;
  const sel=()=>{$('bkTxt').focus();$('bkTxt').select();msg('Backup gerado. O texto está selecionado: copie com Ctrl+C (ou segure e copie no celular).',true)};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>msg(`Backup copiado (${compras.length} compras, ${FUNDOS.filter(f=>tenho[f.t]>0).length} fundos com cotas). Cole e guarde onde quiser.`,true),sel);else sel()};
