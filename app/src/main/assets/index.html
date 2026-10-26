@@ -1,93 +1,328 @@
-<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulador Invest</title>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bola de Neve FII</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <style>
-:root{--bg:#f4f6f8;--card:#fff;--tx:#17202a;--mu:#5d6d7e;--ac:#0b6e4f;--bd:#dde3e8}
-@media(prefers-color-scheme:dark){:root{--bg:#111518;--card:#1b2126;--tx:#e8ecef;--mu:#9aa7b2;--ac:#3fbf8f;--bd:#2c353c}}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-header{background:var(--ac);color:#fff;padding:16px}header h1{margin:0;font-size:1.2rem}header p{margin:4px 0 0;font-size:.8rem;opacity:.85}
-main{padding:12px;max-width:720px;margin:auto}.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
-h2{font-size:1rem;margin:0 0 10px}.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-label{font-size:.78rem;color:var(--mu);display:block}input,select{width:100%;padding:10px;margin-top:3px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:1rem}
-button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-size:1rem;font-weight:600;margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:.85rem}td,th{padding:7px 4px;border-bottom:1px solid var(--bd);text-align:right}td:first-child,th:first-child{text-align:left}
-.best{color:var(--ac);font-weight:700}canvas{width:100%;height:240px}.leg{display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem;margin-top:6px}
-.leg span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c)}
-.note{font-size:.72rem;color:var(--mu)}
-</style></head><body>
-<header><h1>Simulador de Investimentos</h1><p>Renda fixa brasileira, valores líquidos de IR, IOF e custódia</p></header>
-<main>
-<div class="card"><h2>Seu investimento</h2><div class="g">
-<div><label>Valor inicial (R$)<input id="ini" type="number" value="10000"></label></div>
-<div><label>Aporte mensal (R$)<input id="apo" type="number" value="500"></label></div>
-<div><label>Prazo (meses)<input id="pz" type="number" value="36"></label></div>
-<div><label>Meta (R$, opcional)<input id="meta" type="number" value=""></label></div>
-</div></div>
-<div class="card"><h2>Taxas (% ao ano, editáveis)</h2><div class="g">
-<div><label>Selic<input id="selic" type="number" step="0.01" value="14.25"></label></div>
-<div><label>CDI<input id="cdi" type="number" step="0.01" value="14.15"></label></div>
-<div><label>IPCA projetado<input id="ipca" type="number" step="0.01" value="4.50"></label></div>
-<div><label>CDB/LC (% do CDI)<input id="pcdb" type="number" value="110"></label></div>
-<div><label>LCI/LCA (% do CDI)<input id="plci" type="number" value="90"></label></div>
-<div><label>Tesouro IPCA+ (juro real)<input id="ipcar" type="number" step="0.01" value="7.5"></label></div>
-<div><label>Tesouro Prefixado<input id="pre" type="number" step="0.01" value="13.5"></label></div>
-<div><label>Custódia B3 Tesouro<input id="cust" type="number" step="0.01" value="0.20"></label></div>
+/* layout: painel de meta no topo, fichas por fundo em grade (como a folha do vídeo), tabela comparativa no fim */
+:root{--bg:#eef3f7;--card:#fff;--tx:#14202b;--mu:#5a6b7a;--ac:#1f5f99;--ice:#5fa8d3;--bd:#d6e0e8;--ok:#1c7c54;--warn:#b5651d;color-scheme:light;
+--f-hand:"Patrick Hand","Comic Sans MS",cursive;--f-body:system-ui,-apple-system,"Segoe UI",sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e151c;--card:#16202a;--tx:#e4edf4;--mu:#93a6b6;--ac:#7db8ea;--ice:#7fc3ea;--bd:#26343f;--ok:#4cc38a;--warn:#e3a45a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-body)}
+.wrap{max-width:1240px;margin:auto;padding-block:18px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+h1{font-family:var(--f-hand);font-size:2.2rem;margin:0;line-height:1.05;color:var(--ac)}
+h1 span{color:var(--ice)}
+.sub{margin:4px 0 0;color:var(--mu);font-size:.9rem;max-width:70ch}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;min-width:0}
+h2{font-size:1.05rem;margin:0 0 12px}
+.form{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media(max-width:900px){.form{grid-template-columns:1fr 1fr}}
+label{font-size:.76rem;color:var(--mu);display:block}
+input{width:100%;padding:9px;margin-top:3px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:.98rem;font-variant-numeric:tabular-nums}
+input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.fichas{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.ficha{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;display:grid;gap:8px;align-content:start}
+.ficha header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ficha h3{font-family:var(--f-hand);font-size:1.7rem;margin:0;color:var(--ac)}
+.tag{font-size:.68rem;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--mu);white-space:nowrap}
+.tag.sug{border-color:var(--ice);color:var(--ice)}
+.row{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;border-bottom:1px dashed var(--bd);padding-bottom:5px}
+.row span{color:var(--mu)}.row b{font-variant-numeric:tabular-nums;text-align:right}
+.ficha .ed{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.ficha .ed input{padding:6px;font-size:.85rem}
+.ficha .ed label{font-size:.68rem}
+.big{font-family:var(--f-hand);font-size:1.25rem;color:var(--ac)}
+.tempo{display:grid;grid-template-columns:1fr;gap:3px;font-size:.84rem;font-variant-numeric:tabular-nums}
+.tempo div{display:flex;justify-content:space-between;gap:6px}.tempo span{color:var(--mu)}
+.meta{background:color-mix(in srgb,var(--ac) 10%,var(--card));border-radius:8px;padding:8px 10px;font-size:.84rem;display:grid;gap:3px}
+.meta b{font-variant-numeric:tabular-nums}
+.prog{height:6px;background:var(--bd);border-radius:99px;overflow:hidden}.prog i{display:block;height:100%;background:var(--ok)}
+.ficha.papel{border:2px solid var(--ok)}.ficha.tijolo{border:2px solid var(--ice)}
+.ficha.dest{box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 18%,transparent)}.ficha.tijolo.dest{box-shadow:0 0 0 4px color-mix(in srgb,var(--ice) 22%,transparent)}
+.ciclo{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600}
+.ciclo:before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.ciclo.papel{color:var(--ok)}.ciclo.tijolo{color:var(--ice)}
+.ficha .ed{grid-template-columns:1fr 1fr!important}
+.cenario{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.88rem;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ok) 12%,var(--card));border:1px solid var(--bd)}
+.cenario.baixo{background:color-mix(in srgb,var(--ice) 14%,var(--card))}
+.legenda{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+@media(max-width:700px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{border:1px solid var(--bd);border-radius:10px;padding:10px}.kpi span{display:block;font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+.kpi b{display:block;font-size:1.15rem;margin-top:3px;font-variant-numeric:tabular-nums}.kpi.hl b{color:var(--ok)}.kpi.pior b{color:var(--warn)}.kpi small{display:block;font-size:.72rem;margin-top:2px;color:var(--mu)}
+.veredito{font-size:.9rem;padding:10px 12px;border-radius:8px;margin-bottom:12px;border:1px solid var(--bd)}.veredito.bom{background:color-mix(in srgb,var(--ok) 12%,var(--card))}.veredito.ruim{background:color-mix(in srgb,var(--warn) 14%,var(--card))}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.presets button{padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);cursor:pointer;font-size:.85rem}
+.presets button:hover{border-color:var(--ac)}button:focus-visible{outline:2px solid var(--ac)}
+.bar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--bd);margin-bottom:6px}.bar i{display:block;height:100%}
+.bad{color:#d0453a!important}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}@media(max-width:900px){.duo{grid-template-columns:1fr}}
+.compra{display:grid;grid-template-columns:1.2fr .8fr 1fr 1.2fr auto;gap:8px;align-items:end;margin-bottom:12px}@media(max-width:620px){.compra{grid-template-columns:1fr 1fr}}
+select{width:100%;padding:9px;margin-top:3px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:.95rem}
+.btn{padding:10px 14px;border:0;border-radius:8px;background:var(--ok);color:#fff;font-weight:700;cursor:pointer;font-size:.9rem}
+.x{border:0;background:none;color:var(--mu);cursor:pointer;font-size:1rem;padding:2px 6px}.x:hover{color:#d0453a}
+tr.prox td{background:color-mix(in srgb,var(--ok) 14%,transparent);font-weight:600}
+.dia{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);font-weight:700}
+.form4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}@media(max-width:760px){.form4{grid-template-columns:1fr 1fr}}
+canvas{width:100%;height:280px;display:block}
+.leg2{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--mu);margin-top:6px}.leg2 i{display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle}
+.bk{display:grid;gap:10px}.bk textarea{width:100%;min-height:90px;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:12px ui-monospace,Consolas,monospace;resize:vertical}
+.bk .acoes{display:flex;gap:8px;flex-wrap:wrap}.btn.sec{background:var(--ac)}#bkMsg{font-size:.84rem}
+.grupo{display:grid;gap:10px}.gtit{display:flex;flex-direction:column;gap:2px;font-size:1.1rem;margin:6px 0 0;padding-left:10px;border-left:4px solid}
+.gtit.papel{border-color:var(--ok)}.gtit.tijolo{border-color:var(--ice)}.gtit small{font-size:.8rem;font-weight:400;color:var(--mu)}
+#fichas{display:grid;gap:18px}
+.pre{position:relative}.pre i{position:absolute;left:9px;top:50%;transform:translateY(-35%);font-style:normal;font-size:.8rem;color:var(--mu);pointer-events:none}.pre input{padding-left:30px!important}
+.magico{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:0 8px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ac) 9%,var(--card))}
+.magico span{font-size:.82rem;color:var(--mu)}.magico b{font-family:var(--f-hand);font-size:1.6rem;color:var(--ac);text-align:right}.magico small{grid-column:1/-1;text-align:right;font-size:.8rem;color:var(--mu);font-variant-numeric:tabular-nums}
+.row span,.row b{white-space:nowrap}
+.tbox{display:grid;gap:5px}.tbox .lbl{font-size:.76rem;color:var(--mu)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-size:.74rem;font-weight:600}
+.best{color:var(--ok);font-weight:700}
+.note{font-size:.74rem;color:var(--mu);line-height:1.5;max-width:110ch}
+.warn{color:var(--warn)}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+
+<div class="wrap">
+ <div><h1>Bola de Neve <span>❄</span> FIIs</h1>
+ <p class="sub">Quantas cotas você precisa para o dividendo comprar uma cota nova todo mês, quanto tempo leva com cada aporte e quantas cotas comprar para chegar na renda que você quer.</p></div>
+
+ <div class="card"><h2>Sua meta</h2><div class="form">
+  <div><label for="renda">Renda mensal desejada (R$)</label><input id="renda" type="number" value="1000"></div>
+  <div><label for="aporte">Seu aporte mensal (R$)</label><input id="aporte" type="number" value="300"></div>
+  <div><label for="a1">Aportes da tabela de tempo (R$)</label><input id="a1" type="text" value="50, 100, 200, 300"></div>
+  <div><label for="selic">Selic atual (% a.a.)</label><input id="selic" type="number" step="0.25" value="14.25"></div>
+  <div><label for="reinv">Reinvestir dividendos? (1 = sim, 0 = não)</label><input id="reinv" type="number" min="0" max="1" value="1"></div>
+ </div></div>
+
+ <div class="cenario" id="cenario"></div>
+ <div class="legenda"><span class="ciclo papel">Papel (CRI): paga mais com juros altos</span><span class="ciclo tijolo">Tijolo: valoriza quando os juros caem</span></div>
+
+ <div id="fichas"></div>
+
+ <div class="card"><h2>Minha carteira dividida</h2>
+  <div class="presets"><button data-p="eq">Equilibrada 50/50</button><button data-p="renda">Mais renda (70% papel)</button><button data-p="tij">Mais tijolo (70% tijolo)</button><button data-p="zero">Zerar</button></div>
+  <div class="bar" id="bar"></div><p class="note" id="pesoTxt"></p>
+  <div class="kpis">
+   <div class="kpi"><span>Renda mensal hoje</span><b id="kHoje">–</b></div>
+   <div class="kpi"><span>DY médio da carteira</span><b id="kDy">–</b></div>
+   <div class="kpi"><span>Valor para a meta</span><b id="kVal">–</b></div>
+   <div class="kpi hl"><span>Tempo com seu aporte</span><b id="kTempo">–</b></div>
+  </div>
+  <div class="scroll"><table id="cart"></table></div>
+ </div>
+
+ <div class="duo">
+ <div class="card"><h2>Minhas compras</h2>
+  <form class="compra" id="fCompra">
+   <div><label for="cF">Fundo</label><select id="cF"></select></div>
+   <div><label for="cQ">Cotas</label><input id="cQ" type="number" min="1" value="10"></div>
+   <div><label for="cP">Preço pago (R$)</label><input id="cP" type="number" step="0.01"></div>
+   <div><label for="cD">Data</label><input id="cD" type="date"></div>
+   <button class="btn" type="submit">Comprei</button>
+  </form>
+  <div class="scroll"><table id="hist"></table></div>
+  <p class="note" id="histTxt"></p>
+ </div>
+ <div class="card"><h2>Calendário de pagamentos</h2>
+  <div class="scroll"><table id="cal"></table></div>
+  <p class="note">Dias com base nos pagamentos de outubro/2026; podem mudar alguns dias de um mês para outro por causa de feriados e fins de semana. Para receber, você precisa ter a cota na data-com, normalmente o último dia útil do mês anterior. Dia do GARE11 é aproximado.</p>
+ </div>
+ </div>
+
+ <div class="card"><h2>E se a Selic cair?</h2>
+  <div class="form4">
+   <div><label for="sAlvo">Selic no futuro (% a.a.)</label><input id="sAlvo" type="number" step="0.25" value="10.5"></div>
+   <div><label for="sAnos">Em quantos anos</label><input id="sAnos" type="number" min="1" value="3"></div>
+   <div><label for="ipca">Reajuste dos aluguéis / IPCA (% a.a.)</label><input id="ipca" type="number" step="0.1" value="4"></div>
+   <div><label for="valT">Valorização do tijolo por ponto de queda (%)</label><input id="valT" type="number" step="0.5" value="3"></div>
+  </div>
+  <div class="kpis">
+   <div class="kpi"><span>Meta com Selic parada</span><b id="sK1">–</b></div>
+   <div class="kpi"><span>Meta com Selic caindo</span><b id="sK2">–</b></div>
+   <div class="kpi"><span>Renda em 10 anos (parada)</span><b id="sK3">–</b></div>
+   <div class="kpi"><span>Renda em 10 anos (caindo)</span><b id="sK4">–</b></div>
+  </div>
+  <div class="veredito" id="sVer"></div>
+  <canvas id="sCv"></canvas>
+  <div class="leg2"><span><i style="background:var(--ac)"></i>Renda mensal, Selic parada</span><span><i style="background:var(--ok)"></i>Renda mensal, Selic caindo</span><span><i style="background:var(--warn)"></i>Sua meta</span></div>
+  <p class="note" id="sTxt"></p>
+ </div>
+
+ <div class="card bk"><h2>Backup dos seus dados</h2>
+  <p class="note" style="margin:0">Seus dados ficam só neste aparelho. Copie o backup e guarde onde quiser (WhatsApp, e-mail, Google Drive ou um arquivo no GitHub). Para levar para outro aparelho, cole o texto aqui e toque em Restaurar.</p>
+  <div class="acoes"><button class="btn" type="button" id="bkCopiar">Copiar backup</button><button class="btn sec" type="button" id="bkRest">Restaurar backup</button></div>
+  <label for="bkTxt">Texto do backup</label><textarea id="bkTxt" spellcheck="false" placeholder="Cole aqui o backup para restaurar"></textarea>
+  <div id="bkMsg" role="status"></div>
+ </div>
+
+ <div class="card"><h2>Comparativo para a sua meta</h2><div class="scroll"><table id="cmp"></table></div>
+ <p class="note" id="cmpTxt"></p></div>
+
+ <p class="note"><b>Como ler.</b> Nº mágico = cotação ÷ dividendo, arredondado para cima: com essa quantidade, o dividendo do mês compra 1 cota sozinho. O tempo considera o aporte mensal mais os dividendos reinvestidos, comprando só cotas inteiras, com cotação e dividendo constantes.
+ <br><b>Dados.</b> Dividendos pagos em outubro de 2026 (MXRF11, HGLG11 em 15/10; KNCR11 em 14/10; VGIR11 em 20/10; CPTS11 em 22/10; XPML11 e BTLG11 em 23/10). Cotações calculadas a partir do dividend yield divulgado, exceto KNCR11 (cotação informada). <span class="warn">GARE11 usa o último dado que encontrei, de fevereiro de 2026.</span> Edite cotação e dividendo em cada ficha com o valor do dia na sua corretora.
+ <br><b>Cotas que tenho.</b> Você pode digitar direto na ficha ou usar "Minhas compras", que soma as cotas e guarda o histórico.
+ <br>Dividendos de FII são isentos de IR para pessoa física nas regras atuais; lucro na venda das cotas paga 20%. Dividendo muda todo mês. Seus valores ficam salvos neste navegador. Simulação educativa, não é recomendação de investimento.</p>
 </div>
-<p class="note">Confira as taxas do dia no site do Banco Central e do Tesouro Direto antes de decidir.</p>
-<button onclick="simular()">Simular</button></div>
-<div class="card"><h2>Resultado líquido</h2><table id="tab"></table><p class="note" id="metaTxt"></p></div>
-<div class="card"><h2>Evolução</h2><canvas id="cv"></canvas><div class="leg" id="leg"></div></div>
-<div class="card"><h2>Mês a mês</h2><select id="selT" onchange="tabelaMes()"></select><div style="max-height:320px;overflow:auto;margin-top:8px"><table id="mes"></table></div></div>
-<p class="note">Simulação educativa. Não é recomendação de investimento. Rentabilidade passada ou projetada não garante resultado futuro.</p>
-</main>
+
 <script>
-const $=id=>+document.getElementById(id).value||0;
+const FUNDOS=[
+ {t:'MXRF11',dia:15,c:'papel',s:'Papel (CRI)',p:9.17,d:0.10},
+ {t:'KNCR11',dia:14,c:'papel',s:'Papel (CRI)',p:105.88,d:1.13},
+ {t:'VGIR11',dia:20,c:'papel',s:'Papel (CRI)',p:9.77,d:0.13},
+ {t:'CPTS11',dia:22,c:'papel',s:'Papel (CRI)',p:7.96,d:0.09,sug:1},
+ {t:'XPML11',dia:23,c:'tijolo',s:'Shopping',p:105.75,d:0.92},
+ {t:'GARE11',dia:6,c:'tijolo',s:'Renda urbana',p:8.74,d:0.083,old:1},
+ {t:'BTLG11',dia:23,c:'tijolo',s:'Logística',p:103.85,d:0.81,sug:1},
+ {t:'HGLG11',dia:15,c:'tijolo',s:'Logística',p:148.10,d:1.17,sug:1}];
+let compras=[];
+const tenho={},peso={};FUNDOS.forEach(f=>{tenho[f.t]=0;peso[f.t]=0});
+const PRESETS={eq:{MXRF11:15,KNCR11:15,VGIR11:10,CPTS11:10,XPML11:15,BTLG11:15,HGLG11:10,GARE11:10},
+ renda:{MXRF11:20,KNCR11:20,VGIR11:15,CPTS11:15,XPML11:10,BTLG11:10,GARE11:10},
+ tij:{MXRF11:10,KNCR11:10,VGIR11:5,CPTS11:5,XPML11:20,BTLG11:20,HGLG11:20,GARE11:10},zero:{}};
+const KEY='bolaneve-v1';
+function dados(){return{v:1,salvoEm:new Date().toISOString(),tenho,peso,f:Object.fromEntries(FUNDOS.map(f=>[f.t,[f.p,f.d]])),compras,g:['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].map(id=>$(id).value)}}
+function salvar(){try{localStorage.setItem(KEY,JSON.stringify(dados()))}catch(e){}}
+function carregar(){try{return aplicar(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){return false}}
+function aplicar(o){if(!o||!o.tenho||!o.f)return false;Object.assign(tenho,o.tenho);Object.assign(peso,o.peso||{});
+ const ANT=['MXRF11','XPML11','GARE11','VGIR11','KNCR11','BTLG11','HGLG11','CPTS11'],fo=Array.isArray(o.f)?Object.fromEntries(o.f.map((v,i)=>[ANT[i],v])):o.f;
+ FUNDOS.forEach(f=>{const v=fo[f.t];if(v){f.p=v[0];f.d=v[1]}});compras=o.compras||[];['renda','aporte','a1','selic','reinv','sAlvo','sAnos','ipca','valT'].forEach((id,i)=>{if(o.g&&o.g[i]!=null)$(id).value=o.g[i]});return true}
+const $=id=>document.getElementById(id);
 const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const cores=['#9aa7b2','#1f77b4','#2ca02c','#ff7f0e','#d62728','#9467bd'];
-let res=[];
-const mensal=a=>Math.pow(1+a/100,1/12)-1;
-function aliqIR(dias){return dias<=180?.225:dias<=360?.20:dias<=720?.175:.15}
-const iofTab=[96,93,90,86,83,80,76,73,70,66,63,60,56,53,50,46,43,40,36,33,30,26,23,20,16,13,10,6,3,0];
-function sim(nome,taxaM,isento,custodia,poupanca){
- const n=$('pz'),ini=$('ini'),apo=$('apo');let lotes=[{v:ini,m:0,p:ini}],hist=[];
- for(let m=1;m<=n;m++){
-  for(const l of lotes){let t=taxaM;if(poupanca){t=$('selic')>8.5?Math.pow(1.005,1)*1.0017-1:mensal($('selic')*.7)} l.v*=1+t;if(custodia)l.v*=1-mensal(custodia)}
-  if(m<n&&apo>0)lotes.push({v:apo,m:m,p:apo});
-  let bruto=0,liq=0,inv=0;
-  for(const l of lotes){const dias=(m-l.m)*30,lucro=l.v-l.p;let imp=0;
-   if(!isento&&lucro>0){const iof=dias<30?lucro*iofTab[dias]/100:0;imp=iof+(lucro-iof)*aliqIR(dias)}
-   bruto+=l.v;liq+=l.v-imp;inv+=l.p}
-  hist.push({m,bruto,liq,inv,imp:bruto-liq})}
- return{nome,hist}}
-function simular(){
- const cdi=$('cdi');
- res=[sim('Poupança',0,true,0,true),
- sim('CDB/LC '+$('pcdb')+'% CDI',mensal(cdi*$('pcdb')/100),false,0),
- sim('LCI/LCA '+$('plci')+'% CDI (isenta)',mensal(cdi*$('plci')/100),true,0),
- sim('Tesouro Selic',mensal($('selic')+0.05),false,$('cust')),
- sim('Tesouro IPCA+ '+$('ipcar')+'%',mensal(((1+$('ipca')/100)*(1+$('ipcar')/100)-1)*100),false,$('cust')),
- sim('Tesouro Prefixado '+$('pre')+'%',mensal($('pre')),false,$('cust'))];
- const fin=res.map(r=>r.hist[r.hist.length-1]);const mx=Math.max(...fin.map(f=>f.liq));
- let h='<tr><th>Investimento</th><th>Líquido</th><th>Rendimento</th></tr>';
- res.forEach((r,i)=>{const f=fin[i];h+=`<tr class="${f.liq===mx?'best':''}"><td>${r.nome}</td><td>${brl(f.liq)}</td><td>${brl(f.liq-f.inv)}</td></tr>`});
- h+=`<tr><td colspan="3" class="note" style="text-align:left">Total investido: ${brl(fin[0].inv)}</td></tr>`;
- document.getElementById('tab').innerHTML=h;
- const meta=$('meta'),mt=document.getElementById('metaTxt');
- if(meta>0){const i=fin.indexOf(fin.find(f=>f.liq===mx));const ok=mx>=meta;
-  mt.textContent=ok?`Meta de ${brl(meta)} atingida com ${res[i].nome}.`:`Faltam ${brl(meta-mx)} para a meta no melhor cenário. Aumente o aporte ou o prazo.`}else mt.textContent='';
- const s=document.getElementById('selT');s.innerHTML=res.map((r,i)=>`<option value="${i}">${r.nome}</option>`).join('');s.value=fin.indexOf(fin.find(f=>f.liq===mx));
- desenhar();tabelaMes()}
-function tabelaMes(){const r=res[+document.getElementById('selT').value];
- let h='<tr><th>Mês</th><th>Investido</th><th>Bruto</th><th>Impostos</th><th>Líquido</th></tr>';
- r.hist.forEach(x=>h+=`<tr><td>${x.m}</td><td>${brl(x.inv)}</td><td>${brl(x.bruto)}</td><td>${brl(x.imp)}</td><td>${brl(x.liq)}</td></tr>`);
- document.getElementById('mes').innerHTML=h}
-function desenhar(){const c=document.getElementById('cv'),d=devicePixelRatio||1,W=c.clientWidth,H=240;c.width=W*d;c.height=H*d;
- const x=c.getContext('2d');x.scale(d,d);x.clearRect(0,0,W,H);const n=res[0].hist.length,mx=Math.max(...res.flatMap(r=>r.hist.map(h=>h.liq))),pl=56,pb=20;
- const tx=getComputedStyle(document.body).color;x.fillStyle=tx;x.font='10px sans-serif';x.strokeStyle='rgba(128,128,128,.25)';
- for(let k=0;k<=4;k++){const y=H-pb-(H-pb-8)*k/4;x.beginPath();x.moveTo(pl,y);x.lineTo(W,y);x.stroke();x.fillText((mx*k/4/1000).toFixed(0)+' mil',2,y+3)}
- x.fillText('mês '+n,W-40,H-4);
- res.forEach((r,i)=>{x.strokeStyle=cores[i];x.lineWidth=2;x.beginPath();r.hist.forEach((h,j)=>{const px=pl+(W-pl)*(j/(Math.max(n-1,1))),py=H-pb-(H-pb-8)*h.liq/mx;j?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()});
- document.getElementById('leg').innerHTML=res.map((r,i)=>`<span style="--c:${cores[i]}">${r.nome}</span>`).join('')}
-simular();addEventListener('resize',desenhar);
-</script></body></html>
+const num=v=>v.toLocaleString('pt-BR');
+const fmtN=(v,c)=>v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c});
+const lerN=t=>{t=String(t).trim();if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');return +t||0};
+function tempoTxt(m){if(m===null)return'+50 anos';if(m===0)return'já tem';const a=Math.floor(m/12),r=m%12;return(a?a+'a ':'')+(r?r+'m':'').trim()||'0m'}
+// meses até ter 'alvo' cotas, partindo de q0, aportando 'ap' por mês e reinvestindo dividendos
+function meses(f,alvo,ap,q0,reinv){let q=q0,c=0,m=0;if(q>=alvo)return 0;
+ while(q<alvo){m++;if(m>600)return null;c+=ap+(reinv?q*f.d:0);const n=Math.floor(c/f.p);if(n>0){q+=n;c-=n*f.p}}return m}
+function aportes(){return $('a1').value.split(/[,; ]+/).map(Number).filter(v=>v>0).slice(0,6)}
+function montar(){
+ const card=(f,i)=>`<article class="ficha ${f.c}" id="card${i}">
+  <header><h3>${f.t}</h3><span class="tag ${f.sug?'sug':''}">${f.sug?'sugestão · ':''}${f.s}</span></header>
+  <div class="ed">
+   <div><label for="p${i}">Cota</label><div class="pre"><i>R$</i><input id="p${i}" type="text" inputmode="decimal" value="${fmtN(f.p,2)}"></div></div>
+   <div><label for="d${i}">Dividendo/mês</label><div class="pre"><i>R$</i><input id="d${i}" type="text" inputmode="decimal" value="${fmtN(f.d,f.d<0.1&&Math.round(f.d*1000)%10?3:2)}"></div></div>
+   <div><label for="q${i}">Cotas que tenho</label><input id="q${i}" type="number" min="0" value="${tenho[f.t]}"></div>
+   <div><label for="w${i}">% na carteira</label><input id="w${i}" type="number" min="0" max="100" value="${peso[f.t]}"></div>
+  </div>
+  ${f.old?'<div class="note warn">Dividendo de fev/2026, confira o atual.</div>':''}
+  <div class="magico"><span>Nº mágico</span><b id="m${i}"></b><small id="v${i}"></small></div>
+  <div class="row"><span>Rende por mês</span><b id="y${i}"></b></div>
+  <div class="row"><span>Falta</span><b id="f${i}"></b></div>
+  <div class="tbox"><span class="lbl">Tempo até o nº mágico</span><div class="tempo" id="t${i}"></div></div>
+  <div class="meta" id="r${i}"></div>
+ </article>`;
+ const grupo=(c,tit,sub)=>`<section class="grupo"><h2 class="gtit ${c}">${tit}<small>${sub}</small></h2><div class="fichas">${FUNDOS.map((f,i)=>f.c===c?card(f,i):'').join('')}</div></section>`;
+ $('fichas').innerHTML=grupo('papel','Fundos de papel (CRI)','Pagam mais com juros altos. Dividendo acompanha a Selic.')+grupo('tijolo','Fundos de tijolo','Imóveis físicos: aluguel sobe com a inflação e a cota valoriza quando os juros caem.');
+ FUNDOS.forEach((f,i)=>{$('p'+i).oninput=e=>{f.p=lerN(e.target.value);calc()};$('d'+i).oninput=e=>{f.d=lerN(e.target.value);calc()};
+  $('p'+i).onblur=e=>e.target.value=fmtN(f.p,2);$('d'+i).onblur=e=>e.target.value=fmtN(f.d,Math.round(f.d*1000)%10?3:2);
+  $('q'+i).oninput=e=>{tenho[f.t]=Math.max(0,Math.floor(+e.target.value||0));calc()};$('w'+i).oninput=e=>{peso[f.t]=Math.max(0,+e.target.value||0);calc()}})}
+function preset(p){FUNDOS.forEach((f,i)=>{peso[f.t]=PRESETS[p][f.t]||0;$('w'+i).value=peso[f.t]});calc()}
+document.querySelectorAll('.presets button').forEach(b=>b.onclick=()=>preset(b.dataset.p));
+function cores(f){return f.c==='papel'?'var(--ok)':'var(--ice)'}
+function carteira(renda,ap,re){
+ const tw=FUNDOS.reduce((a,f)=>a+peso[f.t],0),ok=FUNDOS.filter(f=>peso[f.t]>0&&f.p>0&&f.d>0);
+ const hoje=FUNDOS.reduce((a,f)=>a+tenho[f.t]*f.d,0);$('kHoje').textContent=brl(hoje);
+ const pp=FUNDOS.filter(f=>f.c==='papel').reduce((a,f)=>a+peso[f.t],0);
+ $('bar').innerHTML=FUNDOS.filter(f=>peso[f.t]>0).map(f=>`<i title="${f.t} ${peso[f.t]}%" style="width:${tw?peso[f.t]/tw*100:0}%;background:${cores(f)};opacity:${.55+.45*(FUNDOS.indexOf(f)%2)}"></i>`).join('');
+ const pt=$('pesoTxt');pt.className='note'+(tw!==100?' bad':'');
+ pt.textContent=tw?`Total ${tw}%${tw!==100?' (ajuste para somar 100%)':''} · Papel ${Math.round(pp/tw*100)}% · Tijolo ${Math.round((tw-pp)/tw*100)}%`:'Escolha um modelo acima ou digite o % de cada fundo nas fichas.';
+ if(!ok.length||!tw){['kDy','kVal','kTempo'].forEach(k=>$(k).textContent='–');$('cart').innerHTML='';return}
+ const dy=ok.reduce((a,f)=>a+peso[f.t]/tw*f.d/f.p,0),cap=renda/dy;
+ $('kDy').textContent=(dy*100).toFixed(2).replace('.',',')+'% ao mês';$('kVal').textContent=brl(cap);
+ const st=ok.map(f=>({f,w:peso[f.t]/tw,q:tenho[f.t],c:0}));let m=0,rd=st.reduce((a,s)=>a+s.q*s.f.d,0);
+ while(rd<renda&&m<=600){m++;st.forEach(s=>{s.c+=ap*s.w+(re?s.q*s.f.d:0);const n=Math.floor(s.c/s.f.p);if(n>0){s.q+=n;s.c-=n*s.f.p}});rd=st.reduce((a,s)=>a+s.q*s.f.d,0)}
+ $('kTempo').textContent=tempoTxt(m>600?null:m);
+ $('cart').innerHTML='<tr><th>Fundo</th><th>Tipo</th><th>%</th><th>Aporte/mês</th><th>Cotas p/ meta</th><th>Tenho</th><th>Faltam</th><th>Valor que falta</th></tr>'+
+  ok.map(f=>{const w=peso[f.t]/tw,q=Math.ceil(cap*w/f.p),fl=Math.max(0,q-tenho[f.t]);return `<tr><td>${f.t}</td><td><span class="ciclo ${f.c}">${f.c==='papel'?'Papel':'Tijolo'}</span></td><td>${Math.round(w*100)}%</td><td>${brl(ap*w)}</td><td>${num(q)}</td><td>${num(tenho[f.t])}</td><td>${num(fl)}</td><td>${brl(fl*f.p)}</td></tr>`}).join('');
+}
+function setTenho(t,v){tenho[t]=Math.max(0,v);const i=FUNDOS.findIndex(f=>f.t===t);if(i>=0)$('q'+i).value=tenho[t]}
+function initCompra(){$('cF').innerHTML=FUNDOS.map((f,i)=>`<option value="${i}">${f.t}</option>`).join('');
+ const hj=new Date();$('cD').value=hj.toISOString().slice(0,10);const pre=()=>$('cP').value=FUNDOS[+$('cF').value].p.toFixed(2);$('cF').onchange=pre;pre();
+ $('fCompra').addEventListener('submit',e=>{e.preventDefault();const f=FUNDOS[+$('cF').value],q=Math.floor(+$('cQ').value||0),p=+$('cP').value||0;if(q<1||p<=0)return;
+  compras.unshift({t:f.t,q,p,d:$('cD').value||new Date().toISOString().slice(0,10)});setTenho(f.t,tenho[f.t]+q);calc()})}
+function historico(){
+ const fmt=d=>d.split('-').reverse().join('/');
+ if(!compras.length){$('hist').innerHTML='';$('histTxt').textContent='Nenhuma compra registrada. Cada compra soma as cotas na ficha do fundo.';return}
+ const pm={};compras.forEach(c=>{pm[c.t]=pm[c.t]||{q:0,v:0};pm[c.t].q+=c.q;pm[c.t].v+=c.q*c.p});
+ $('hist').innerHTML='<tr><th>Data</th><th>Fundo</th><th>Cotas</th><th>Preço</th><th>Total</th><th></th></tr>'+compras.map((c,i)=>`<tr><td>${fmt(c.d)}</td><td>${c.t}</td><td>${num(c.q)}</td><td>${brl(c.p)}</td><td>${brl(c.q*c.p)}</td><td><button class="x" data-i="${i}" aria-label="Apagar compra">✕</button></td></tr>`).join('');
+ document.querySelectorAll('#hist .x').forEach(b=>b.onclick=()=>{const c=compras[+b.dataset.i];compras.splice(+b.dataset.i,1);setTenho(c.t,tenho[c.t]-c.q);calc()});
+ const tot=Object.values(pm).reduce((a,x)=>a+x.v,0);
+ $('histTxt').textContent=`Total investido: ${brl(tot)}. Preço médio: `+Object.entries(pm).map(([t,x])=>`${t} ${brl(x.v/x.q)}`).join(' · ')}
+function calendario(){
+ const hoje=new Date().getDate(),ord=FUNDOS.filter(f=>f.d>0).slice().sort((a,b)=>a.dia-b.dia);
+ const prox=ord.find(f=>f.dia>=hoje)||ord[0];let tot=0;
+ $('cal').innerHTML='<tr><th>Dia</th><th>Fundo</th><th>Por cota</th><th>Suas cotas</th><th>Você recebe</th></tr>'+ord.map(f=>{const v=tenho[f.t]*f.d;tot+=v;
+  return `<tr class="${f.dia===prox.dia?'prox':''}"><td><span class="dia">${f.dia}</span></td><td>${f.t}${f.dia===prox.dia?' · próximo':''}</td><td>${brl(f.d)}</td><td>${num(tenho[f.t])}</td><td>${brl(v)}</td></tr>`}).join('')+
+  `<tr><td colspan="4"><b>Total no mês</b></td><td><b>${brl(tot)}</b></td></tr>`}
+// carteira sob um caminho de Selic; devolve renda mensal mês a mês
+function simCart(ap,re,n,caindo){
+ const tw=FUNDOS.reduce((a,f)=>a+peso[f.t],0),ok=FUNDOS.filter(f=>peso[f.t]>0&&f.p>0&&f.d>0);if(!tw||!ok.length)return null;
+ const s0=+$('selic').value||0.01,sA=caindo?(+$('sAlvo').value||0):s0,N=Math.max(1,+$('sAnos').value||1)*12,ip=(+$('ipca').value||0)/100,k=(+$('valT').value||0)/100;
+ const st=ok.map(f=>({f,w:peso[f.t]/tw,q:tenho[f.t],c:0}));const out=[];
+ for(let m=1;m<=n;m++){const sel=s0+(sA-s0)*Math.min(1,m/N),inf=Math.pow(1+ip,m/12);let rd=0;
+  st.forEach(s=>{const f=s.f;let d,p;if(f.c==='papel'){d=f.d*sel/s0;p=f.p}else{d=f.d*inf;p=f.p*inf*(1+k*Math.max(0,s0-sel))}
+   s.c+=ap*s.w+(re?s.q*d:0);const nq=Math.floor(s.c/p);if(nq>0){s.q+=nq;s.c-=nq*p}rd+=s.q*d});out.push(rd)}
+ return out}
+function cenario(renda,ap,re){
+ const n=300,a=simCart(ap,re,n,false),b=simCart(ap,re,n,true);
+ if(!a){['sK1','sK2','sK3','sK4'].forEach(k=>$(k).textContent='–');$('sTxt').textContent='Monte a carteira dividida acima para ver o cenário.';return}
+ const hit=x=>{const i=x.findIndex(v=>v>=renda);return i<0?null:i+1};
+ const ha=hit(a),hb=hit(b),ta=ha??1e9,tb=hb??1e9;
+ $('sK1').textContent=tempoTxt(ha);$('sK2').textContent=tempoTxt(hb);$('sK3').textContent=brl(a[119]);$('sK4').textContent=brl(b[119]);
+ const marca=(ids,melhor)=>ids.forEach((id,j)=>{const k=$(id).parentElement;k.classList.remove('hl','pior');const sm=k.querySelector('small');if(sm)sm.remove();
+  if(melhor===null)return;const ok=j===melhor;k.classList.add(ok?'hl':'pior');k.insertAdjacentHTML('beforeend',`<small>${ok?'Melhor cenário':'Pior cenário'}</small>`)});
+ marca(['sK1','sK2'],ta===tb?null:(ta<tb?0:1));marca(['sK3','sK4'],Math.abs(a[119]-b[119])<0.01?null:(a[119]>b[119]?0:1));
+ const dif=Math.abs(ta-tb),ver=$('sVer');
+ if(ta===tb){ver.className='veredito';ver.textContent='A queda dos juros praticamente não muda o tempo até a sua meta com esta carteira.'}
+ else if(tb>ta){ver.className='veredito ruim';ver.innerHTML=`<b>Com esta carteira, a Selic caindo te atrasa ${tempoTxt(dif)}.</b> Os fundos de papel passam a pagar menos e as cotas de tijolo que você ainda vai comprar ficam mais caras. Para se proteger, aumente a parte em tijolo agora, enquanto as cotas estão mais baratas.`}
+ else{ver.className='veredito bom';ver.innerHTML=`<b>Com esta carteira, a Selic caindo te adianta ${tempoTxt(dif)}.</b> A valorização e o reajuste dos fundos de tijolo compensam a queda dos dividendos de papel.`}
+ const s0=+$('selic').value,sA=+$('sAlvo').value;
+ $('sTxt').textContent=`Simulação com a sua carteira dividida. Selic vai de ${s0.toLocaleString('pt-BR')}% para ${sA.toLocaleString('pt-BR')}% em ${$('sAnos').value} anos. Dividendos de papel acompanham a Selic; aluguéis de tijolo sobem com o IPCA e a cota do tijolo valoriza ${$('valT').value}% a cada ponto de queda. São premissas simplificadas: edite os campos para testar outros cenários.`;
+ const c=$('sCv'),dpr=devicePixelRatio||1,W=c.clientWidth,H=280;if(!W)return;c.width=W*dpr;c.height=H*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);
+ const cs=getComputedStyle(document.documentElement),col=v=>cs.getPropertyValue(v).trim();
+ const pl=64,pr=30,pt=10,pb=26,iw=W-pl-pr,ih=H-pt-pb,anos=20,m=anos*12,mx=Math.max(renda*1.15,...a.slice(0,m),...b.slice(0,m),1);
+ const X=i=>pl+iw*i/(m-1),Y=v=>pt+ih*(1-v/mx);x.font='11px system-ui,sans-serif';
+ for(let k=0;k<=4;k++){const y=pt+ih*k/4;x.strokeStyle=col('--bd');x.lineWidth=1;x.beginPath();x.moveTo(pl,y);x.lineTo(W-pr,y);x.stroke();x.fillStyle=col('--mu');x.textAlign='right';x.fillText(brl(mx*(1-k/4)).replace(/,\d\d$/,''),pl-6,y+4)}
+ x.textAlign='center';for(let y=0;y<=anos;y+=5)x.fillText(y+' anos',X(Math.min(y*12,m-1)),H-6);
+ x.strokeStyle=col('--warn');x.setLineDash([5,4]);x.beginPath();x.moveTo(pl,Y(renda));x.lineTo(W-pr,Y(renda));x.stroke();x.setLineDash([]);
+ [[a,'--ac'],[b,'--ok']].forEach(([s,v])=>{x.strokeStyle=col(v);x.lineWidth=2.2;x.beginPath();for(let i=0;i<m;i++){i?x.lineTo(X(i),Y(s[i])):x.moveTo(X(i),Y(s[i]))}x.stroke()})}
+function calc(){
+ const renda=+$('renda').value||0,ap=+$('aporte').value||0,re=$('reinv').value!=='0',aps=aportes();const linhas=[];
+ const selic=+$('selic').value||0,alto=selic>=10,cen=$('cenario');cen.className='cenario'+(alto?'':' baixo');
+ cen.innerHTML=alto?`<b>Selic ${selic.toLocaleString('pt-BR')}%: juros altos.</b> Fundos de papel (verde) estão pagando mais e ficam em destaque. Fundos de tijolo (azul) tendem a estar com a cota mais barata, o que pode ser boa hora para comprar pensando no longo prazo.`:`<b>Selic ${selic.toLocaleString('pt-BR')}%: juros mais baixos.</b> Fundos de tijolo (azul) ficam em destaque: costumam valorizar quando os juros caem. Os dividendos dos fundos de papel tendem a diminuir.`;
+ FUNDOS.forEach((f,i)=>$('card'+i).classList.toggle('dest',alto?f.c==='papel':f.c==='tijolo'));
+ FUNDOS.forEach((f,i)=>{
+  if(!(f.p>0&&f.d>0)){['y','m','v','f'].forEach(k=>$(k+i).textContent='–');$('t'+i).innerHTML='';$('r'+i).innerHTML='Preencha cotação e dividendo.';return}
+  const q=tenho[f.t],mag=Math.ceil(f.p/f.d),falt=Math.max(0,mag-q);
+  $('y'+i).textContent=fmtN(f.d/f.p*100,2)+'%';
+  $('m'+i).textContent=num(mag)+' cotas';$('v'+i).textContent='custam '+brl(mag*f.p);
+  $('f'+i).textContent=falt?num(falt)+' cotas ('+brl(falt*f.p)+')':'Atingido ✓';
+  $('t'+i).innerHTML=aps.map(a=>`<div><span>R$ ${num(a)}/mês</span><b>${tempoTxt(meses(f,mag,a,q,re))}</b></div>`).join('');
+  const qm=Math.ceil(renda/f.d),fm=Math.max(0,qm-q),tm=meses(f,qm,ap,q,re),pct=Math.min(100,q/qm*100);
+  $('r'+i).innerHTML=renda>0?`<div>Para ${brl(renda)}/mês: <b>${num(qm)} cotas</b> (${brl(qm*f.p)})</div>
+   <div>Faltam <b>${num(fm)} cotas</b> = ${brl(fm*f.p)}</div>
+   <div>Com ${brl(ap)}/mês: <b>${tempoTxt(tm)}</b></div><div class="prog"><i style="width:${pct}%"></i></div>`:'Defina a renda desejada.';
+  linhas.push({f,qm,inv:qm*f.p,tm,mag})});
+ const minInv=Math.min(...linhas.map(l=>l.inv)),minT=Math.min(...linhas.map(l=>l.tm??1e9));
+ $('cmp').innerHTML='<tr><th>Fundo</th><th>Segmento</th><th>DY mês</th><th>Nº mágico</th><th>Cotas p/ meta</th><th>Valor p/ meta</th><th>Tempo com seu aporte</th></tr>'+
+  linhas.map(l=>`<tr><td>${l.f.t}</td><td><span class="ciclo ${l.f.c}">${l.f.s}</span></td><td>${(l.f.d/l.f.p*100).toFixed(2).replace('.',',')}%</td><td>${num(l.mag)}</td><td>${num(l.qm)}</td><td class="${l.inv===minInv?'best':''}">${brl(l.inv)}</td><td class="${l.tm===minT?'best':''}">${tempoTxt(l.tm)}</td></tr>`).join('');
+ carteira(renda,ap,re);historico();calendario();cenario(renda,ap,re);salvar();
+ $('cmpTxt').textContent=renda>0?`Para ${brl(renda)} por mês investindo num único fundo. Em verde, o menor valor necessário e o menor tempo. Dividir entre vários fundos e segmentos reduz o risco de um deles cortar o dividendo.`:'';
+}
+['renda','aporte','a1','reinv','selic','sAlvo','sAnos','ipca','valT'].forEach(id=>$(id).addEventListener('input',calc));
+if(!carregar())FUNDOS.forEach(f=>peso[f.t]=PRESETS.eq[f.t]||0);
+montar();initCompra();calc();
+function msg(t,ok){const m=$('bkMsg');m.textContent=t;m.style.color=ok?'var(--ok)':'#d0453a'}
+$('bkCopiar').onclick=()=>{const t=JSON.stringify(dados());$('bkTxt').value=t;
+ const sel=()=>{$('bkTxt').focus();$('bkTxt').select();msg('Backup gerado. O texto está selecionado: copie com Ctrl+C (ou segure e copie no celular).',true)};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>msg(`Backup copiado (${compras.length} compras, ${FUNDOS.filter(f=>tenho[f.t]>0).length} fundos com cotas). Cole e guarde onde quiser.`,true),sel);else sel()};
+$('bkRest').onclick=()=>{let o;try{o=JSON.parse($('bkTxt').value.trim())}catch(e){msg('Esse texto não é um backup válido. Cole o texto completo, começando com { e terminando com }.',false);return}
+ compras=[];FUNDOS.forEach(f=>{tenho[f.t]=0;peso[f.t]=0});
+ if(!aplicar(o)){msg('Esse texto não é um backup deste simulador.',false);return}
+ montar();calc();const d=o.salvoEm?new Date(o.salvoEm).toLocaleString('pt-BR'):'';msg(`Backup restaurado${d?' (salvo em '+d+')':''}.`,true)};addEventListener('resize',()=>cenario(+$('renda').value||0,+$('aporte').value||0,$('reinv').value!=='0'));
+</script>
+</body></html>
