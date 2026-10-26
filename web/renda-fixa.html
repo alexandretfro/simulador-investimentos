@@ -1,0 +1,102 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulador de Investimentos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#17202a;--mu:#5d6d7e;--ac:#0b6e4f;--bd:#dde3e8}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#111518;--card:#1b2126;--tx:#e8ecef;--mu:#9aa7b2;--ac:#3fbf8f;--bd:#2c353c}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111518;--card:#1b2126;--tx:#e8ecef;--mu:#9aa7b2;--ac:#3fbf8f;--bd:#2c353c}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:var(--ac);color:#fff;padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}header h1{margin:0;font-size:1.2rem}header p{margin:4px 0 0;font-size:.8rem;opacity:.85}
+main{padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1200px;margin:auto;display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:16px;align-items:start}
+.side{position:sticky;top:12px}.main{min-width:0}
+@media(max-width:820px){main{grid-template-columns:1fr}.side{position:static}}
+td,th{font-variant-numeric:tabular-nums}canvas{height:320px!important}.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:1rem;margin:0 0 10px}.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:.78rem;color:var(--mu);display:block}input,select{width:100%;padding:10px;margin-top:3px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:1rem}
+button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-size:1rem;font-weight:600;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}td,th{padding:7px 4px;border-bottom:1px solid var(--bd);text-align:right}td:first-child,th:first-child{text-align:left}
+.best{color:var(--ac);font-weight:700}canvas{width:100%;height:240px}.leg{display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem;margin-top:6px}
+.leg span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c)}
+.note{font-size:.72rem;color:var(--mu)}
+</style>
+<header><h1>Simulador de Investimentos</h1><p>Renda fixa brasileira, valores líquidos de IR, IOF e custódia</p></header>
+<main>
+<div class="side"><div class="card"><h2>Seu investimento</h2><div class="g">
+<div><label>Valor inicial (R$)<input id="ini" type="number" value="10000"></label></div>
+<div><label>Aporte mensal (R$)<input id="apo" type="number" value="500"></label></div>
+<div><label>Prazo (meses)<input id="pz" type="number" value="36"></label></div>
+<div><label>Meta (R$, opcional)<input id="meta" type="number" value=""></label></div>
+</div></div>
+<div class="card"><h2>Taxas (% ao ano, editáveis)</h2><div class="g">
+<div><label>Selic<input id="selic" type="number" step="0.01" value="14.25"></label></div>
+<div><label>CDI<input id="cdi" type="number" step="0.01" value="14.15"></label></div>
+<div><label>IPCA projetado<input id="ipca" type="number" step="0.01" value="4.50"></label></div>
+<div><label>CDB/LC (% do CDI)<input id="pcdb" type="number" value="110"></label></div>
+<div><label>LCI/LCA (% do CDI)<input id="plci" type="number" value="90"></label></div>
+<div><label>Tesouro IPCA+ (juro real)<input id="ipcar" type="number" step="0.01" value="7.5"></label></div>
+<div><label>Tesouro Prefixado<input id="pre" type="number" step="0.01" value="13.5"></label></div>
+<div><label>Fundo DI (% do CDI, bruto)<input id="pfun" type="number" value="100"></label></div>
+<div><label>Taxa de administração do fundo<input id="adm" type="number" step="0.01" value="0.50"></label></div>
+<div><label>Custódia B3 Tesouro<input id="cust" type="number" step="0.01" value="0.20"></label></div>
+</div>
+<p class="note">Confira as taxas do dia no site do Banco Central e do Tesouro Direto antes de decidir.</p>
+<button onclick="simular()">Simular</button></div></div>
+<div class="main">
+<div class="card"><h2>Resultado líquido</h2><table id="tab"></table><p class="note" id="metaTxt"></p></div>
+<div class="card"><h2>Evolução</h2><canvas id="cv"></canvas><div class="leg" id="leg"></div></div>
+<div class="card"><h2>Mês a mês</h2><select id="selT" onchange="tabelaMes()"></select><div style="max-height:320px;overflow:auto;margin-top:8px"><table id="mes"></table></div></div>
+<p class="note">Fundo: considera come-cotas de 15% em maio e novembro (a cada 6 meses na simulação), fundo de longo prazo. Simulação educativa. Não é recomendação de investimento. Rentabilidade passada ou projetada não garante resultado futuro.</p>
+</div></main>
+<script>
+const $=id=>+document.getElementById(id).value||0;
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const cores=['#9aa7b2','#1f77b4','#2ca02c','#ff7f0e','#d62728','#9467bd','#8c564b'];
+let res=[];
+const mensal=a=>Math.pow(1+a/100,1/12)-1;
+function aliqIR(dias){return dias<=180?.225:dias<=360?.20:dias<=720?.175:.15}
+const iofTab=[96,93,90,86,83,80,76,73,70,66,63,60,56,53,50,46,43,40,36,33,30,26,23,20,16,13,10,6,3,0];
+function sim(nome,taxaM,isento,custodia,poupanca,fundo){
+ const n=$('pz'),ini=$('ini'),apo=$('apo');let lotes=[{v:ini,m:0,p:ini,b:ini,pg:0}],hist=[];
+ for(let m=1;m<=n;m++){
+  for(const l of lotes){let t=taxaM;if(poupanca){t=$('selic')>8.5?Math.pow(1.005,1)*1.0017-1:mensal($('selic')*.7)} l.v*=1+t;if(custodia)l.v*=1-mensal(custodia);if(fundo)l.v*=1-mensal($('adm'))}
+  if(fundo&&m%6===0)for(const l of lotes){const g=l.v-l.b;if(g>0){const c=g*.15;l.v-=c;l.pg+=c}l.b=l.v}
+  if(m<n&&apo>0)lotes.push({v:apo,m:m,p:apo,b:apo,pg:0});
+  let bruto=0,liq=0,inv=0,pago=0;
+  for(const l of lotes){const dias=(m-l.m)*30,lucro=l.v-l.p;let imp=0;
+   if(fundo){const lt=lucro+l.pg;const iof=dias<30&&lt>0?lt*iofTab[dias]/100:0;imp=Math.max(0,iof+(lt-iof)*aliqIR(dias)-l.pg);pago+=l.pg}
+   else if(!isento&&lucro>0){const iof=dias<30?lucro*iofTab[dias]/100:0;imp=iof+(lucro-iof)*aliqIR(dias)}
+   bruto+=l.v;liq+=l.v-imp;inv+=l.p}
+  hist.push({m,bruto:bruto+pago,liq,inv,imp:bruto+pago-liq})}
+ return{nome,hist}}
+function simular(){
+ const cdi=$('cdi');
+ res=[sim('Poupança',0,true,0,true),
+ sim('CDB/LC '+$('pcdb')+'% CDI',mensal(cdi*$('pcdb')/100),false,0),
+ sim('LCI/LCA '+$('plci')+'% CDI (isenta)',mensal(cdi*$('plci')/100),true,0),
+ sim('Tesouro Selic',mensal($('selic')+0.05),false,$('cust')),
+ sim('Tesouro IPCA+ '+$('ipcar')+'%',mensal(((1+$('ipca')/100)*(1+$('ipcar')/100)-1)*100),false,$('cust')),
+ sim('Tesouro Prefixado '+$('pre')+'%',mensal($('pre')),false,$('cust')),
+ sim('Fundo DI '+$('pfun')+'% CDI (adm '+$('adm')+'%)',mensal(cdi*$('pfun')/100),false,0,false,true)];
+ const fin=res.map(r=>r.hist[r.hist.length-1]);const mx=Math.max(...fin.map(f=>f.liq));
+ let h='<tr><th>Investimento</th><th>Líquido</th><th>Rendimento</th></tr>';
+ res.forEach((r,i)=>{const f=fin[i];h+=`<tr class="${f.liq===mx?'best':''}"><td>${r.nome}</td><td>${brl(f.liq)}</td><td>${brl(f.liq-f.inv)}</td></tr>`});
+ h+=`<tr><td colspan="3" class="note" style="text-align:left">Total investido: ${brl(fin[0].inv)}</td></tr>`;
+ document.getElementById('tab').innerHTML=h;
+ const meta=$('meta'),mt=document.getElementById('metaTxt');
+ if(meta>0){const i=fin.indexOf(fin.find(f=>f.liq===mx));const ok=mx>=meta;
+  mt.textContent=ok?`Meta de ${brl(meta)} atingida com ${res[i].nome}.`:`Faltam ${brl(meta-mx)} para a meta no melhor cenário. Aumente o aporte ou o prazo.`}else mt.textContent='';
+ const s=document.getElementById('selT');s.innerHTML=res.map((r,i)=>`<option value="${i}">${r.nome}</option>`).join('');s.value=fin.indexOf(fin.find(f=>f.liq===mx));
+ desenhar();tabelaMes()}
+function tabelaMes(){const r=res[+document.getElementById('selT').value];
+ let h='<tr><th>Mês</th><th>Investido</th><th>Bruto</th><th>Impostos</th><th>Líquido</th></tr>';
+ r.hist.forEach(x=>h+=`<tr><td>${x.m}</td><td>${brl(x.inv)}</td><td>${brl(x.bruto)}</td><td>${brl(x.imp)}</td><td>${brl(x.liq)}</td></tr>`);
+ document.getElementById('mes').innerHTML=h}
+function desenhar(){const c=document.getElementById('cv'),d=devicePixelRatio||1,W=c.clientWidth,H=320;c.width=W*d;c.height=H*d;
+ const x=c.getContext('2d');x.scale(d,d);x.clearRect(0,0,W,H);const n=res[0].hist.length,mx=Math.max(...res.flatMap(r=>r.hist.map(h=>h.liq))),pl=56,pb=20;
+ const tx=getComputedStyle(document.body).color;x.fillStyle=tx;x.font='10px sans-serif';x.strokeStyle='rgba(128,128,128,.25)';
+ for(let k=0;k<=4;k++){const y=H-pb-(H-pb-8)*k/4;x.beginPath();x.moveTo(pl,y);x.lineTo(W,y);x.stroke();x.fillText((mx*k/4/1000).toFixed(0)+' mil',2,y+3)}
+ x.fillText('mês '+n,W-40,H-4);
+ res.forEach((r,i)=>{x.strokeStyle=cores[i];x.lineWidth=2;x.beginPath();r.hist.forEach((h,j)=>{const px=pl+(W-pl)*(j/(Math.max(n-1,1))),py=H-pb-(H-pb-8)*h.liq/mx;j?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()});
+ document.getElementById('leg').innerHTML=res.map((r,i)=>`<span style="--c:${cores[i]}">${r.nome}</span>`).join('')}
+simular();addEventListener('resize',desenhar);
+</script>
+</body></html>
